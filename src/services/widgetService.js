@@ -1,5 +1,4 @@
 import { Platform } from 'react-native';
-import { requestWidgetUpdate } from 'react-native-android-widget';
 import { getEnrichedHabitsList } from '../database/queries.js';
 
 export const WIDGET_NAME = 'HabitGlanceWidget';
@@ -13,6 +12,7 @@ export async function updateHabitWidget() {
   }
 
   try {
+    const { requestWidgetUpdate } = require('react-native-android-widget');
     const habits = await getEnrichedHabitsList();
 
     // Prepare serializable payload for the Jetpack Glance Widget Grid
@@ -28,7 +28,7 @@ export async function updateHabitWidget() {
 
     await requestWidgetUpdate({
       widgetName: WIDGET_NAME,
-      renderWidget: () => null, // The layout component is registered in widget/HabitGlanceWidget
+      renderWidget: () => null,
       widgetInfo: {
         habits: widgetData,
         lastUpdated: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
@@ -37,7 +37,6 @@ export async function updateHabitWidget() {
 
     console.log('[WidgetService] Successfully updated Jetpack Glance widget with', widgetData.length, 'habits');
   } catch (error) {
-    // Graceful handling if widget is not placed on home screen or in dev environment
     console.log('[WidgetService] Widget update info:', error.message || error);
   }
 }

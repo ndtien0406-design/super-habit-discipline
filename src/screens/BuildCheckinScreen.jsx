@@ -1,9 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Image, Alert, ActivityIndicator, Dimensions } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Image, Alert, ActivityIndicator, Dimensions, Platform } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as FileSystem from 'expo-file-system';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Camera, FlipHorizontal, ArrowLeft, Check, Sparkles, AlertCircle } from 'lucide-react-native';
+import { Camera, FlipHorizontal, ArrowLeft, Check, Sparkles, AlertCircle, ImagePlus } from 'lucide-react-native';
 import { THEME } from '../theme/index.js';
 import { getTodayDateString, formatDisplayDate } from '../utils/dateHelper.js';
 import { insertOrUpdateCheckin } from '../database/queries.js';
@@ -12,9 +12,13 @@ import { isMilestone } from '../utils/streakEngine.js';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
+// Default sample evidence photo for Web testing
+const SAMPLE_PHOTO = 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=800&auto=format&fit=crop&q=80';
+
 export function BuildCheckinScreen({ route, navigation }) {
   const { habit } = route.params;
-  const [permission, requestPermission] = useCameraPermissions();
+  const isWeb = Platform.OS === 'web';
+  const [permission, requestPermission] = isWeb ? [{ granted: true }, () => {}] : useCameraPermissions();
   const [facing, setFacing] = useState('back');
   const [photoUri, setPhotoUri] = useState(null);
   const [note, setNote] = useState('');
@@ -26,6 +30,12 @@ export function BuildCheckinScreen({ route, navigation }) {
   const habitColor = habit.color_code || THEME.colors.primary;
 
   const handleTakePhoto = async () => {
+    if (isWeb) {
+      // Simulate photo capture on Web Preview
+      setPhotoUri(SAMPLE_PHOTO);
+      return;
+    }
+
     if (cameraRef.current) {
       try {
         const photo = await cameraRef.current.takePictureAsync({
@@ -51,10 +61,14 @@ export function BuildCheckinScreen({ route, navigation }) {
 
     setIsSaving(true);
     try {
-      // 1. Copy captured photo to permanent local storage
-      const filename = `habit_${habit.id}_${today}_${Date.now()}.jpg`;
-      const permanentUri = `${FileSystem.documentDirectory}${filename}`;
-      await FileSystem.copyAsync({ from: photoUri, to: permanentUri });
+      let permanentUri = photoUri;
+
+      // Copy captured photo to permanent local storage on Native
+      if (!isWeb && FileSystem.documentDirectory) {
+        const filename = `habit_${habit.id}_${today}_${Date.now()}.jpg`;
+        permanentUri = `${FileSystem.documentDirectory}${filename}`;
+        await FileSystem.copyAsync({ from: photoUri, to: permanentUri });
+      }
 
       // 2. Insert checkin record into SQLite
       await insertOrUpdateCheckin({
@@ -85,7 +99,7 @@ export function BuildCheckinScreen({ route, navigation }) {
     }
   };
 
-  if (!permission) {
+  if (!isWeb && !permission) {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color={THEME.colors.primary} />
@@ -93,7 +107,7 @@ export function BuildCheckinScreen({ route, navigation }) {
     );
   }
 
-  if (!permission.granted) {
+  if (!isWeb && !permission.granted) {
     return (
       <View style={styles.permissionContainer}>
         <AlertCircle size={48} color={THEME.colors.warning} />
@@ -128,32 +142,44 @@ export function BuildCheckinScreen({ route, navigation }) {
       {/* Main Area: Camera or Watermarked Preview */}
       <View style={styles.previewArea}>
         {!photoUri ? (
-          <CameraView style={styles.camera} facing={facing} ref={cameraRef}>
-            {/* Live Camera Guidelines */}
-            <View style={styles.cameraOverlay}>
-              <View style={styles.cameraHeaderNotice}>
-                <Text style={styles.cameraNoticeText}>
-                  📸 Chụp ảnh kỷ luật hôm nay ({formatDisplayDate(today, 'short')})
-                </Text>
-              </View>
-
-              {/* Bottom camera controls */}
-              <View style={styles.cameraControlsRow}>
-                <TouchableOpacity
-                  style={styles.flipBtn}
-                  onPress={() => setFacing(facing === 'back' ? 'front' : 'back')}
-                >
-                  <FlipHorizontal size={24} color="#FFFFFF" />
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.captureBtn} onPress={handleTakePhoto}>
-                  <View style={[styles.captureInnerCircle, { backgroundColor: habitColor }]} />
-                </TouchableOpacity>
-
-                <View style={{ width: 48 }} />
-              </View>
+          isWeb ? (
+            <View style={styles.webCameraMock}>
+              <Camera size={56} color={habitColor} />
+              <Text style={styles.webMockTitle}>Trình Giả Lập Camera Web</Text>
+              <Text style={styles.webMockDesc}>
+                Bấm nút chụp bên dưới để chụp ảnh mẫu và xem thử hiệu ứng Watermark số ngày streak!
+              </Text>
+              <TouchableOpacity style={[styles.webCaptureBtn, { backgroundColor: habitColor }]} onPress={handleTakePhoto}>
+                <Camera size={20} color="#FFFFFF" />
+                <Text style={styles.webCaptureBtnText}>Chụp Ảnh Bằng Chứng</Text>
+              </TouchableOpacity>
             </View>
-          </CameraView>
+          ) : (
+            <CameraView style={styles.camera} facing={facing} ref={cameraRef}>
+              <View style={styles.cameraOverlay}>
+                <View style={styles.cameraHeaderNotice}>
+                  <Text style={styles.cameraNoticeText}>
+                    📸 Chụp ảnh kỷ luật hôm nay ({formatDisplayDate(today, 'short')})
+                  </Text>
+                </View>
+
+                <View style={styles.cameraControlsRow}>
+                  <TouchableOpacity
+                    style={styles.flipBtn}
+                    onPress={() => setFacing(facing === 'back' ? 'front' : 'back')}
+                  >
+                    <FlipHorizontal size={24} color="#FFFFFF" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity style={styles.captureBtn} onPress={handleTakePhoto}>
+                    <View style={[styles.captureInnerCircle, { backgroundColor: habitColor }]} />
+                  </TouchableOpacity>
+
+                  <View style={{ width: 48 }} />
+                </View>
+              </View>
+            </CameraView>
+          )
         ) : (
           <View style={styles.capturedPhotoContainer}>
             <Image source={{ uri: photoUri }} style={styles.capturedImage} resizeMode="cover" />
@@ -459,5 +485,40 @@ const styles = StyleSheet.create({
   backLinkText: {
     color: THEME.colors.textMuted,
     fontSize: 13,
+  },
+  webCameraMock: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+    backgroundColor: '#0F1420',
+  },
+  webMockTitle: {
+    color: '#F8FAFC',
+    fontSize: 18,
+    fontWeight: '700',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  webMockDesc: {
+    color: '#94A3B8',
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+    maxWidth: 320,
+  },
+  webCaptureBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: THEME.radius.md,
+    gap: 8,
+  },
+  webCaptureBtnText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });
