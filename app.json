@@ -8,6 +8,7 @@
     "scheme": "superhabit",
     "userInterfaceStyle": "dark",
     "newArchEnabled": false,
+    "owner": "tien46",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
