@@ -1,23 +1,25 @@
 import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator, StyleSheet, StatusBar } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, StatusBar, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { registerWidgetTaskHandler } from 'react-native-android-widget';
 
 import { AppNavigator } from './src/navigation/AppNavigator.jsx';
 import { getDatabase } from './src/database/dbSetup.js';
 import { getAllHabits, createHabit } from './src/database/queries.js';
 import { initNotifications, scheduleHabitReminder } from './src/services/notificationManager.js';
-import { HabitGlanceWidget } from './src/widget/HabitGlanceWidget.jsx';
 import { THEME } from './src/theme/index.js';
 
-// Register Android Widget background task handler
-try {
-  registerWidgetTaskHandler(async (props) => {
-    const { widgetInfo } = props;
-    return <HabitGlanceWidget habits={widgetInfo?.habits || []} lastUpdated={widgetInfo?.lastUpdated || ''} />;
-  });
-} catch (e) {
-  // Graceful fallback in environments without widget support
+// Register Android Widget background task handler only on native Android
+if (Platform.OS === 'android') {
+  try {
+    const { registerWidgetTaskHandler } = require('react-native-android-widget');
+    const { HabitGlanceWidget } = require('./src/widget/HabitGlanceWidget.jsx');
+    registerWidgetTaskHandler(async (props) => {
+      const { widgetInfo } = props;
+      return <HabitGlanceWidget habits={widgetInfo?.habits || []} lastUpdated={widgetInfo?.lastUpdated || ''} />;
+    });
+  } catch (e) {
+    // Graceful fallback
+  }
 }
 
 export default function App() {
@@ -27,7 +29,7 @@ export default function App() {
     async function prepareApp() {
       try {
         // 1. Initialize SQLite Database
-        const db = await getDatabase();
+        await getDatabase();
 
         // 2. Initialize Notifications
         await initNotifications();
@@ -83,7 +85,7 @@ export default function App() {
   }
 
   return (
-    <SafeAreaProvider>
+    <SafeAreaProvider style={styles.rootContainer}>
       <StatusBar barStyle="light-content" backgroundColor="#0A0D14" />
       <AppNavigator />
     </SafeAreaProvider>
@@ -91,10 +93,16 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
+  rootContainer: {
+    flex: 1,
+    backgroundColor: '#0A0D14',
+    ...(Platform.OS === 'web' ? { height: '100vh', width: '100vw' } : {}),
+  },
   loadingContainer: {
     flex: 1,
     backgroundColor: '#0A0D14',
     justifyContent: 'center',
     alignItems: 'center',
+    ...(Platform.OS === 'web' ? { height: '100vh', width: '100vw' } : {}),
   },
 });

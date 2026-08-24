@@ -1,19 +1,29 @@
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import * as Notifications from 'expo-notifications';
 
-// Configure notification behavior when app is in foreground
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
+// Configure notification behavior when app is in foreground (Native only)
+if (Platform.OS !== 'web') {
+  try {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+      }),
+    });
+  } catch (e) {
+    // Ignore in unsupported environments
+  }
+}
 
 /**
  * Initialize notification channels and request permissions
  */
 export async function initNotifications() {
+  if (Platform.OS === 'web') {
+    return true;
+  }
+
   try {
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
@@ -52,7 +62,7 @@ export async function initNotifications() {
  * @param {object} habit - { id, title, type, reminder_time }
  */
 export async function scheduleHabitReminder(habit) {
-  if (!habit || !habit.reminder_time) return null;
+  if (Platform.OS === 'web' || !habit || !habit.reminder_time) return null;
 
   try {
     // First cancel any existing scheduled notification for this habit
@@ -85,7 +95,6 @@ export async function scheduleHabitReminder(habit) {
       trigger,
     });
 
-    console.log(`[NotificationManager] Scheduled daily reminder for Habit #${habit.id} at ${hour}:${minute}`);
     return identifier;
   } catch (error) {
     console.error(`[NotificationManager] Failed to schedule reminder for Habit #${habit.id}:`, error);
@@ -98,10 +107,11 @@ export async function scheduleHabitReminder(habit) {
  * @param {number} habitId
  */
 export async function cancelHabitReminder(habitId) {
+  if (Platform.OS === 'web') return;
+
   try {
     const identifier = `habit_reminder_${habitId}`;
     await Notifications.cancelScheduledNotificationAsync(identifier);
-    console.log(`[NotificationManager] Cancelled reminder for Habit #${habitId}`);
   } catch (error) {
     console.error(`[NotificationManager] Failed to cancel reminder for Habit #${habitId}:`, error);
   }
@@ -112,6 +122,8 @@ export async function cancelHabitReminder(habitId) {
  * @param {Array<object>} habits
  */
 export async function rescheduleAllHabitReminders(habits = []) {
+  if (Platform.OS === 'web') return;
+
   for (const habit of habits) {
     await scheduleHabitReminder(habit);
   }
