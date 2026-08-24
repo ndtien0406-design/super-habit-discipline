@@ -1,0 +1,132 @@
+import React from 'react';
+import { FlexWidget, TextWidget } from 'react-native-android-widget';
+
+/**
+ * Android Home Screen Widget (Jetpack Glance Grid)
+ * Shows a glance of all active habits and their streak counters.
+ */
+export function HabitGlanceWidget({ habits = [], lastUpdated = '' }) {
+  const displayHabits = habits.slice(0, 6); // Up to 6 in the compact glance grid
+
+  return (
+    <FlexWidget
+      style={{
+        height: 'match_parent',
+        width: 'match_parent',
+        backgroundColor: '#0A0D14',
+        borderRadius: 20,
+        padding: 12,
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+      }}
+    >
+      {/* Header */}
+      <FlexWidget
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          width: 'match_parent',
+          marginBottom: 8,
+        }}
+      >
+        <TextWidget
+          text="⚡ KỶ LUẬT CÁ NHÂN"
+          style={{
+            color: '#F8FAFC',
+            fontSize: 13,
+            fontWeight: 'bold',
+          }}
+        />
+        <TextWidget
+          text={lastUpdated ? `Cập nhật ${lastUpdated}` : 'Super Client'}
+          style={{
+            color: '#64748B',
+            fontSize: 10,
+          }}
+        />
+      </FlexWidget>
+
+      {/* Grid of habits */}
+      <FlexWidget
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          justifyContent: 'space-between',
+          width: 'match_parent',
+          flex: 1,
+        }}
+      >
+        {displayHabits.length === 0 ? (
+          <FlexWidget
+            style={{
+              justifyContent: 'center',
+              alignItems: 'center',
+              width: 'match_parent',
+              height: 'match_parent',
+            }}
+          >
+            <TextWidget
+              text="Chưa có thói quen nào. Mở app để tạo!"
+              style={{
+                color: '#94A3B8',
+                fontSize: 12,
+              }}
+            />
+          </FlexWidget>
+        ) : (
+          displayHabits.map((habit) => (
+            <FlexWidget
+              key={habit.id}
+              clickAction="OPEN_URI"
+              clickActionData={{ uri: habit.deepLink || `superhabit://habit/${habit.id}` }}
+              style={{
+                width: '48%',
+                backgroundColor: '#141A26',
+                borderRadius: 12,
+                padding: 8,
+                marginBottom: 6,
+                borderLeftWidth: 3,
+                borderLeftColor: habit.color || '#6366F1',
+              }}
+            >
+              <TextWidget
+                text={habit.title}
+                maxLines={1}
+                style={{
+                  color: '#F8FAFC',
+                  fontSize: 12,
+                  fontWeight: 'bold',
+                }}
+              />
+              <FlexWidget
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginTop: 4,
+                }}
+              >
+                <TextWidget
+                  text={`🔥 ${habit.streak} ngày`}
+                  style={{
+                    color: '#F59E0B',
+                    fontSize: 11,
+                    fontWeight: 'bold',
+                  }}
+                />
+                <TextWidget
+                  text={habit.isCompleted ? '✓ Xong' : 'Chưa'}
+                  style={{
+                    color: habit.isCompleted ? '#10B981' : '#64748B',
+                    fontSize: 10,
+                  }}
+                />
+              </FlexWidget>
+            </FlexWidget>
+          ))
+        )}
+      </FlexWidget>
+    </FlexWidget>
+  );
+}

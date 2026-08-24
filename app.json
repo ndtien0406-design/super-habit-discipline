@@ -1,0 +1,57 @@
+{
+  "expo": {
+    "name": "Super Habit Discipline",
+    "slug": "super-habit-discipline",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "superhabit",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": false,
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A0D14"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0A0D14"
+      },
+      "package": "com.discipline.superclient",
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "RECEIVE_BOOT_COMPLETED",
+        "POST_NOTIFICATIONS"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Cho phép ứng dụng truy cập Camera để chụp ảnh bằng chứng kỷ luật mỗi ngày."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Cho phép ứng dụng lưu ảnh và video recap kỷ luật vào thư viện máy.",
+          "savePhotosPermission": "Cho phép ứng dụng lưu ảnh và video recap kỷ luật vào thư viện máy."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#6366F1",
+          "sounds": []
+        }
+      ]
+    ]
+  }
+}
