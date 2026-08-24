@@ -5,7 +5,7 @@ import { Camera, ShieldCheck, Flame, Trophy, Snowflake, ChevronRight, CheckCircl
 import { THEME } from '../theme/index.js';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-export const CARD_WIDTH = SCREEN_WIDTH * 0.85;
+export const CARD_WIDTH = Math.min(SCREEN_WIDTH * 0.85, 360);
 
 export function SwipeableHabitCard({ habit, onCheckinPress, onCardPress }) {
   const isBuild = habit.type === 'build';

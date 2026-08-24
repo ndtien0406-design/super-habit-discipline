@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   carouselContent: {
-    paddingHorizontal: (SCREEN_WIDTH - CARD_WIDTH) / 2 - 8,
+    paddingHorizontal: Math.max(12, ((SCREEN_WIDTH > 440 ? 440 : SCREEN_WIDTH) - CARD_WIDTH) / 2 - 8),
     alignItems: 'center',
   },
   loadingContainer: {

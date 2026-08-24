@@ -87,7 +87,15 @@ export default function App() {
   return (
     <SafeAreaProvider style={styles.rootContainer}>
       <StatusBar barStyle="light-content" backgroundColor="#0A0D14" />
-      <AppNavigator />
+      {Platform.OS === 'web' ? (
+        <View style={styles.webOuterBackground}>
+          <View style={styles.webMobileFrame}>
+            <AppNavigator />
+          </View>
+        </View>
+      ) : (
+        <AppNavigator />
+      )}
     </SafeAreaProvider>
   );
 }
@@ -96,13 +104,30 @@ const styles = StyleSheet.create({
   rootContainer: {
     flex: 1,
     backgroundColor: '#0A0D14',
-    ...(Platform.OS === 'web' ? { height: '100vh', width: '100vw' } : {}),
   },
   loadingContainer: {
     flex: 1,
     backgroundColor: '#0A0D14',
     justifyContent: 'center',
     alignItems: 'center',
-    ...(Platform.OS === 'web' ? { height: '100vh', width: '100vw' } : {}),
+  },
+  webOuterBackground: {
+    flex: 1,
+    backgroundColor: '#05070B',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100%',
+    width: '100%',
+  },
+  webMobileFrame: {
+    width: '100%',
+    maxWidth: 440,
+    height: '100%',
+    maxHeight: 920,
+    backgroundColor: '#0A0D14',
+    overflow: 'hidden',
+    borderRadius: 24,
+    borderWidth: 1.5,
+    borderColor: '#1E293B',
   },
 });
