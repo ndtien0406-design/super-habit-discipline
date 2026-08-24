@@ -75,7 +75,9 @@
             }
           ]
         }
-      ]
+      ],
+      "expo-asset",
+      "expo-font"
     ]
   }
 }
