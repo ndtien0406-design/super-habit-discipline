@@ -52,6 +52,24 @@
           "color": "#6366F1",
           "sounds": []
         }
+      ],
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "HabitGlanceWidget",
+              "label": "Kỷ Luật Cá Nhân (Glance)",
+              "minWidth": "160dp",
+              "minHeight": "100dp",
+              "targetCellWidth": 3,
+              "targetCellHeight": 2,
+              "description": "Lưới theo dõi tiến độ đa thói quen kỷ luật",
+              "previewImage": "./assets/adaptive-icon.png",
+              "updatePeriodMillis": 1800000
+            }
+          ]
+        }
       ]
     ]
   }
