@@ -9,6 +9,11 @@
     "userInterfaceStyle": "dark",
     "newArchEnabled": false,
     "owner": "tien46",
+    "extra": {
+      "eas": {
+        "projectId": "c8b14541-2fdd-4b93-95b8-6bedff50052e"
+      }
+    },
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
