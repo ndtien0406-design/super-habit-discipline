@@ -40,7 +40,7 @@ export async function initNotifications() {
 
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('habit-discipline-reminders', {
-        name: 'Nhắc Nhở Kỷ Luật',
+        name: 'Discipline Reminders',
         importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: '#6366F1',
@@ -73,7 +73,7 @@ export async function scheduleHabitReminder(habit) {
     const minute = parseInt(minStr, 10) || 0;
 
     const identifier = `habit_reminder_${habit.id}`;
-    const habitTypeLabel = habit.type === 'build' ? '📸 Chụp ảnh kỷ luật' : '🛡️ Vượt qua cám dỗ';
+    const habitTypeLabel = habit.type === 'build' ? '📸 Discipline Photo' : '🛡️ Overcome Temptation';
 
     const trigger = {
       type: Notifications.SchedulableTriggerInputTypes.DAILY,
@@ -85,8 +85,8 @@ export async function scheduleHabitReminder(habit) {
     await Notifications.scheduleNotificationAsync({
       identifier,
       content: {
-        title: `🔥 Kỷ Luật: ${habit.title}`,
-        body: `Đã đến giờ điểm danh [${habitTypeLabel}]! Hãy giữ vững streak của bạn hôm nay.`,
+        title: `🔥 Discipline: ${habit.title}`,
+        body: `Time to check-in [${habitTypeLabel}]! Keep your streak alive today.`,
         data: { habitId: habit.id, type: habit.type },
         sound: true,
         priority: Notifications.AndroidNotificationPriority.HIGH,

@@ -21,12 +21,14 @@ import {
   ChevronRight
 } from 'lucide-react-native';
 import * as Notifications from 'expo-notifications';
-import { THEME } from '../theme/index.js';
+import { useAppTheme } from '../theme/index.js';
 import { NotionConfigModal } from '../components/NotionConfigModal.jsx';
 import { getCurrentMonthKey } from '../utils/dateHelper.js';
 import { updateHabitWidget } from '../services/widgetService.js';
 
 export function SettingsScreen({ navigation }) {
+  const { THEME, colors, isDark } = useAppTheme();
+  
   const [notionModalVisible, setNotionModalVisible] = useState(false);
   const currentMonth = getCurrentMonthKey();
 
@@ -34,135 +36,135 @@ export function SettingsScreen({ navigation }) {
     try {
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: '🔥 Thử Nghiệm Nhắc Nhở Kỷ Luật',
-          body: 'Thông báo hoạt động hoàn hảo! Đừng quên điểm danh để giữ vững chuỗi streak.',
+          title: '🔥 Discipline Reminder Test',
+          body: 'Notification is working perfectly! Don\'t forget to check in to keep your streak alive.',
           data: { test: true },
           color: '#6366F1',
         },
         trigger: null, // trigger immediately
       });
-      Alert.alert('Thành công', 'Đã gửi thông báo kiểm tra lên thiết bị!');
+      Alert.alert('Success', 'Test notification sent to device!');
     } catch (e) {
-      Alert.alert('Lỗi gửi thông báo', e.message);
+      Alert.alert('Notification Error', e.message);
     }
   };
 
   const handleRefreshWidget = async () => {
     await updateHabitWidget();
-    Alert.alert('Đã Cập Nhật Widget', 'Dữ liệu mới nhất đã được đồng bộ sang Android Home Screen Widget (Jetpack Glance).');
+    Alert.alert('Widget Updated', 'Latest data has been synced to the Android Home Screen Widget (Jetpack Glance).');
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
       {/* Top Header */}
-      <View style={styles.topHeader}>
+      <View style={[styles.topHeader, { backgroundColor: colors.bg, borderBottomColor: colors.surfaceBorder }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
-          <ArrowLeft size={22} color="#FFFFFF" />
+          <ArrowLeft size={22} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Cài Đặt & Đồng Bộ</Text>
+        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Settings & Sync</Text>
         <View style={{ width: 40 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Architecture Highlight */}
         <LinearGradient
-          colors={['#1E273A', '#0F1420']}
-          style={styles.architectureCard}
+          colors={isDark ? ['#1E273A', '#0F1420'] : [colors.surface, colors.bg]}
+          style={[styles.architectureCard, { borderColor: 'rgba(99, 102, 241, 0.3)' }]}
         >
           <View style={styles.architectureHeader}>
-            <Shield size={22} color={THEME.colors.primary} />
-            <Text style={styles.architectureTitle}>Kiến Trúc Super Client (V4)</Text>
+            <Shield size={22} color={colors.primary} />
+            <Text style={[styles.architectureTitle, { color: colors.textPrimary }]}>Super Client Architecture (V4)</Text>
           </View>
-          <Text style={styles.architectureDesc}>
-            100% Offline-First. Toàn bộ logic điểm danh, tính streak, xuất video recap bằng CPU thiết bị, và đồng bộ Notion API trực tiếp từ điện thoại — không phụ thuộc server trung gian.
+          <Text style={[styles.architectureDesc, { color: colors.textSecondary }]}>
+            100% Offline-First. All check-in logic, streak calculation, video recap rendering using device CPU, and direct Notion API sync from phone — no intermediary servers.
           </Text>
         </LinearGradient>
 
         {/* Section 1: Notion Cloud Sync */}
         <View style={styles.section}>
-          <Text style={styles.sectionHeader}>ĐỒNG BỘ ĐÁM MÂY (NOTION API)</Text>
+          <Text style={[styles.sectionHeader, { color: colors.textMuted }]}>CLOUD SYNC (NOTION API)</Text>
           
           <TouchableOpacity
-            style={styles.settingItem}
+            style={[styles.settingItem, { backgroundColor: colors.surface, borderColor: colors.surfaceBorder }]}
             onPress={() => setNotionModalVisible(true)}
             activeOpacity={0.8}
           >
             <View style={styles.settingItemLeft}>
-              <View style={[styles.iconBadge, { backgroundColor: `${THEME.colors.primary}20` }]}>
-                <Cloud size={20} color={THEME.colors.primary} />
+              <View style={[styles.iconBadge, { backgroundColor: `${colors.primary}20` }]}>
+                <Cloud size={20} color={colors.primary} />
               </View>
               <View>
-                <Text style={styles.settingItemTitle}>Cấu Hình & Đồng Bộ Notion</Text>
-                <Text style={styles.settingItemSubtitle}>Tự động đẩy ghi chú, nhật ký lên Notion Database</Text>
+                <Text style={[styles.settingItemTitle, { color: colors.textPrimary }]}>Notion Config & Sync</Text>
+                <Text style={[styles.settingItemSubtitle, { color: colors.textSecondary }]}>Automatically push notes and journals to Notion Database</Text>
               </View>
             </View>
-            <ChevronRight size={18} color={THEME.colors.textMuted} />
+            <ChevronRight size={18} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
 
         {/* Section 2: Freeze Quota System */}
         <View style={styles.section}>
-          <Text style={styles.sectionHeader}>CƠ CHẾ THẺ ĐÓNG BĂNG (FREEZE CARD)</Text>
-          <View style={styles.infoCard}>
+          <Text style={[styles.sectionHeader, { color: colors.textMuted }]}>FREEZE CARD MECHANISM</Text>
+          <View style={[styles.infoCard, { backgroundColor: colors.surface, borderColor: colors.surfaceBorder }]}>
             <View style={styles.infoCardHeader}>
-              <Snowflake size={18} color={THEME.colors.freeze} />
-              <Text style={styles.infoCardTitle}>Giới Hạn 3 Lần / Tháng / Thói Quen</Text>
+              <Snowflake size={18} color={colors.freeze} />
+              <Text style={[styles.infoCardTitle, { color: colors.textPrimary }]}>Limit: 3 Times / Month / Habit</Text>
             </View>
-            <Text style={styles.infoCardDesc}>
-              Mỗi thói quen được phép lỡ điểm danh tối đa 3 lần trong tháng hiện tại ({currentMonth}) mà không bị mất streak. Lần bỏ lỡ thứ 4 sẽ bị tính là Thất Bại (Failed) và streak bị reset về 0. Hạn mức tự động cấp lại 3 lượt vào ngày 1 hàng tháng.
+            <Text style={[styles.infoCardDesc, { color: colors.textSecondary }]}>
+              Each habit can miss check-ins up to 3 times in the current month ({currentMonth}) without losing the streak. The 4th miss will be counted as Failed and the streak will reset to 0. Quota automatically refills 3 times on the 1st of every month.
             </Text>
           </View>
         </View>
 
         {/* Section 3: Notifications & Widget */}
         <View style={styles.section}>
-          <Text style={styles.sectionHeader}>THÔNG BÁO & TIỆN ÍCH MÀN HÌNH CHÍNH</Text>
+          <Text style={[styles.sectionHeader, { color: colors.textMuted }]}>NOTIFICATIONS & HOME SCREEN WIDGET</Text>
 
           <TouchableOpacity
-            style={styles.settingItem}
+            style={[styles.settingItem, { backgroundColor: colors.surface, borderColor: colors.surfaceBorder }]}
             onPress={handleTestNotification}
             activeOpacity={0.8}
           >
             <View style={styles.settingItemLeft}>
-              <View style={[styles.iconBadge, { backgroundColor: `${THEME.colors.warning}20` }]}>
-                <Bell size={20} color={THEME.colors.warning} />
+              <View style={[styles.iconBadge, { backgroundColor: `${colors.warning}20` }]}>
+                <Bell size={20} color={colors.warning} />
               </View>
               <View>
-                <Text style={styles.settingItemTitle}>Gửi Thông Báo Thử Nghiệm</Text>
-                <Text style={styles.settingItemSubtitle}>Kiểm tra âm thanh & kênh thông báo</Text>
+                <Text style={[styles.settingItemTitle, { color: colors.textPrimary }]}>Send Test Notification</Text>
+                <Text style={[styles.settingItemSubtitle, { color: colors.textSecondary }]}>Test sound & notification channels</Text>
               </View>
             </View>
-            <ChevronRight size={18} color={THEME.colors.textMuted} />
+            <ChevronRight size={18} color={colors.textMuted} />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.settingItem}
+            style={[styles.settingItem, { backgroundColor: colors.surface, borderColor: colors.surfaceBorder }]}
             onPress={handleRefreshWidget}
             activeOpacity={0.8}
           >
             <View style={styles.settingItemLeft}>
-              <View style={[styles.iconBadge, { backgroundColor: `${THEME.colors.success}20` }]}>
-                <Smartphone size={20} color={THEME.colors.success} />
+              <View style={[styles.iconBadge, { backgroundColor: `${colors.success}20` }]}>
+                <Smartphone size={20} color={colors.success} />
               </View>
               <View>
-                <Text style={styles.settingItemTitle}>Đồng Bộ Jetpack Glance Widget</Text>
-                <Text style={styles.settingItemSubtitle}>Cập nhật dữ liệu lưới widget trên Android Home</Text>
+                <Text style={[styles.settingItemTitle, { color: colors.textPrimary }]}>Sync Jetpack Glance Widget</Text>
+                <Text style={[styles.settingItemSubtitle, { color: colors.textSecondary }]}>Update widget grid data on Android Home</Text>
               </View>
             </View>
-            <ChevronRight size={18} color={THEME.colors.textMuted} />
+            <ChevronRight size={18} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
 
         {/* Section 4: Local Database */}
         <View style={styles.section}>
-          <Text style={styles.sectionHeader}>CƠ SỞ DỮ LIỆU CỤC BỘ</Text>
-          <View style={styles.infoCard}>
+          <Text style={[styles.sectionHeader, { color: colors.textMuted }]}>LOCAL DATABASE</Text>
+          <View style={[styles.infoCard, { backgroundColor: colors.surface, borderColor: colors.surfaceBorder }]}>
             <View style={styles.infoCardHeader}>
-              <Database size={18} color={THEME.colors.textSecondary} />
-              <Text style={styles.infoCardTitle}>SQLite Local Engine (expo-sqlite)</Text>
+              <Database size={18} color={colors.textSecondary} />
+              <Text style={[styles.infoCardTitle, { color: colors.textPrimary }]}>SQLite Local Engine (expo-sqlite)</Text>
             </View>
-            <Text style={styles.infoCardDesc}>
-              Toàn bộ dữ liệu thói quen, lịch sử check-in, ảnh đã đóng watermark được lưu trữ an toàn trong bộ nhớ máy của bạn.
+            <Text style={[styles.infoCardDesc, { color: colors.textSecondary }]}>
+              All habit data, check-in history, and watermarked photos are securely stored in your device's memory.
             </Text>
           </View>
         </View>
@@ -180,7 +182,6 @@ export function SettingsScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: THEME.colors.bg,
   },
   topHeader: {
     flexDirection: 'row',
@@ -189,17 +190,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: THEME.spacing.md,
     paddingTop: 48,
     paddingBottom: 14,
-    backgroundColor: '#0F141F',
     borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.surfaceBorder,
   },
   iconBtn: {
     padding: 8,
   },
   headerTitle: {
-    color: THEME.colors.textPrimary,
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: THEME.typography.title2.fontFamily,
   },
   scrollContent: {
     padding: THEME.spacing.md,
@@ -208,7 +206,6 @@ const styles = StyleSheet.create({
     borderRadius: THEME.radius.lg,
     padding: THEME.spacing.md,
     borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.3)',
     marginBottom: THEME.spacing.lg,
   },
   architectureHeader: {
@@ -218,22 +215,20 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   architectureTitle: {
-    color: THEME.colors.textPrimary,
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: THEME.typography.title2.fontFamily,
   },
   architectureDesc: {
-    color: THEME.colors.textSecondary,
     fontSize: 12,
+    fontFamily: THEME.typography.body.fontFamily,
     lineHeight: 18,
   },
   section: {
     marginBottom: THEME.spacing.lg,
   },
   sectionHeader: {
-    color: THEME.colors.textMuted,
     fontSize: 11,
-    fontWeight: '800',
+    fontFamily: THEME.typography.title2.fontFamily,
     letterSpacing: 0.8,
     marginBottom: 10,
   },
@@ -241,11 +236,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: THEME.colors.surface,
     padding: 14,
     borderRadius: THEME.radius.md,
     borderWidth: 1,
-    borderColor: THEME.colors.surfaceBorder,
     marginBottom: 8,
   },
   settingItemLeft: {
@@ -262,21 +255,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   settingItemTitle: {
-    color: THEME.colors.textPrimary,
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: THEME.typography.bodyBold.fontFamily,
   },
   settingItemSubtitle: {
-    color: THEME.colors.textSecondary,
     fontSize: 11,
+    fontFamily: THEME.typography.body.fontFamily,
     marginTop: 2,
   },
   infoCard: {
-    backgroundColor: THEME.colors.surface,
     padding: 14,
     borderRadius: THEME.radius.md,
     borderWidth: 1,
-    borderColor: THEME.colors.surfaceBorder,
   },
   infoCardHeader: {
     flexDirection: 'row',
@@ -285,13 +275,12 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   infoCardTitle: {
-    color: THEME.colors.textPrimary,
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: THEME.typography.title2.fontFamily,
   },
   infoCardDesc: {
-    color: THEME.colors.textSecondary,
     fontSize: 12,
+    fontFamily: THEME.typography.body.fontFamily,
     lineHeight: 18,
   },
 });

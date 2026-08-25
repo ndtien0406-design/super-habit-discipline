@@ -35,34 +35,34 @@ export async function getHabitTimelineImages(habitId) {
  */
 export async function renderHabitRecapVideo(habitId, habitTitle, { onProgress } = {}) {
   try {
-    if (onProgress) onProgress('Đang thu thập ảnh kỷ luật...', 10);
+    if (onProgress) onProgress('Collecting discipline photos...', 10);
 
     const images = await getHabitTimelineImages(habitId);
 
     if (!images || images.length === 0) {
       return {
         success: false,
-        message: 'Chưa có bức ảnh kỷ luật nào được lưu để xuất video recap.'
+        message: 'No discipline photos saved to export recap video.'
       };
     }
 
     const fps = calculateOptimalFps(images.length, 4);
     const duration = +(images.length / fps).toFixed(1);
 
-    if (onProgress) onProgress(`Đang chuẩn bị ${images.length} khung hình (${fps} FPS, ~${duration}s)...`, 30);
+    if (onProgress) onProgress(`Preparing ${images.length} frames (${fps} FPS, ~${duration}s)...`, 30);
 
     // Web simulation
     if (Platform.OS === 'web') {
-      if (onProgress) onProgress('Đang hoàn thiện video recap trên Web...', 80);
+      if (onProgress) onProgress('Finalizing video recap on Web...', 80);
       await new Promise(r => setTimeout(r, 600));
-      if (onProgress) onProgress('Hoàn tất xuất Video Recap!', 100);
+      if (onProgress) onProgress('Video Recap export complete!', 100);
       return {
         success: true,
         videoUri: images[0]?.image_path || '',
         fps,
         duration,
         frameCount: images.length,
-        message: `Đã kết xuất thành công Recap ${images.length} ngày kỷ luật (${duration}s, ${fps} FPS)!`
+        message: `Successfully rendered Recap of ${images.length} discipline days (${duration}s, ${fps} FPS)!`
       };
     }
 
@@ -71,24 +71,24 @@ export async function renderHabitRecapVideo(habitId, habitTitle, { onProgress } 
     if (status !== 'granted') {
       return {
         success: false,
-        message: 'Cần cấp quyền truy cập Thư viện ảnh để lưu video recap.'
+        message: 'Photo Library access is required to save recap video.'
       };
     }
 
-    if (onProgress) onProgress('Đang xử lý render video định dạng 1080x1920 (Shorts/Reels)...', 60);
+    if (onProgress) onProgress('Rendering video in 1080x1920 format (Shorts/Reels)...', 60);
 
     const cleanTitle = habitTitle.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
     const timestamp = Date.now();
     const outputFilename = `recap_${cleanTitle}_${timestamp}.mp4`;
     const outputPath = `${FileSystem.documentDirectory}${outputFilename}`;
 
-    if (onProgress) onProgress('Đang hoàn thiện và lưu vào Thư viện Gallery...', 90);
+    if (onProgress) onProgress('Finalizing and saving to Photo Gallery...', 90);
 
     const firstImage = images[images.length - 1];
     if (firstImage && firstImage.image_path) {
       try {
         const asset = await MediaLibrary.createAssetAsync(firstImage.image_path);
-        const albumName = 'Kỷ Luật Cá Nhân (Super Client)';
+        const albumName = 'Personal Discipline (Super Client)';
         const album = await MediaLibrary.getAlbumAsync(albumName);
         if (album) {
           await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
@@ -100,7 +100,7 @@ export async function renderHabitRecapVideo(habitId, habitTitle, { onProgress } 
       }
     }
 
-    if (onProgress) onProgress('Hoàn tất xuất Video Recap!', 100);
+    if (onProgress) onProgress('Video Recap export complete!', 100);
 
     return {
       success: true,
@@ -108,13 +108,13 @@ export async function renderHabitRecapVideo(habitId, habitTitle, { onProgress } 
       fps,
       duration,
       frameCount: images.length,
-      message: `Đã kết xuất thành công Recap ${images.length} ngày kỷ luật (${duration}s, ${fps} FPS)!`
+      message: `Successfully rendered Recap of ${images.length} discipline days (${duration}s, ${fps} FPS)!`
     };
   } catch (error) {
     console.error('[VideoRenderService] Render error:', error);
     return {
       success: false,
-      message: `Lỗi kết xuất video: ${error.message}`
+      message: `Video rendering error: ${error.message}`
     };
   }
 }

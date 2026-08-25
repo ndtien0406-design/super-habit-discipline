@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Modal, TextInput, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Cloud, CheckCircle2, AlertCircle, RefreshCw, X, Shield, ExternalLink } from 'lucide-react-native';
-import { THEME } from '../theme/index.js';
+import { useAppTheme } from '../theme/index.js';
 import { getSetting, setSetting } from '../database/queries.js';
 import { testNotionConnection, syncCheckinsToNotion } from '../services/notionSync.js';
 
 export function NotionConfigModal({ visible, onClose, onSyncComplete }) {
+  const { THEME, colors, isDark } = useAppTheme();
+  
   const [token, setToken] = useState('');
   const [databaseId, setDatabaseId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -36,12 +38,12 @@ export function NotionConfigModal({ visible, onClose, onSyncComplete }) {
   const handleSave = async () => {
     await setSetting('notion_token', token.trim());
     await setSetting('notion_database_id', databaseId.trim());
-    Alert.alert('Đã lưu', 'Cấu hình Notion đã được lưu cục bộ trên máy.');
+    Alert.alert('Saved', 'Notion config saved locally on device.');
   };
 
   const handleTestConnection = async () => {
     if (!token || !databaseId) {
-      Alert.alert('Thiếu thông tin', 'Vui lòng nhập Token và Database ID.');
+      Alert.alert('Missing Info', 'Please enter Token and Database ID.');
       return;
     }
     setIsTesting(true);
@@ -60,17 +62,17 @@ export function NotionConfigModal({ visible, onClose, onSyncComplete }) {
 
   const handleSyncNow = async () => {
     if (!token || !databaseId) {
-      Alert.alert('Chưa cấu hình', 'Vui lòng kiểm tra kết nối Notion trước khi đồng bộ.');
+      Alert.alert('Not Configured', 'Please test Notion connection before syncing.');
       return;
     }
 
     setIsLoading(true);
-    setSyncProgress({ current: 0, total: 0, text: 'Đang chuẩn bị dữ liệu SQLite...' });
+    setSyncProgress({ current: 0, total: 0, text: 'Preparing SQLite data...' });
 
     try {
       const result = await syncCheckinsToNotion({
         onProgress: (cur, tot, itemTitle) => {
-          setSyncProgress({ current: cur, total: tot, text: `Đang đẩy [${cur}/${tot}]: ${itemTitle}` });
+          setSyncProgress({ current: cur, total: tot, text: `Pushing [${cur}/${tot}]: ${itemTitle}` });
         }
       });
 
@@ -78,19 +80,19 @@ export function NotionConfigModal({ visible, onClose, onSyncComplete }) {
 
       if (result.success) {
         Alert.alert(
-          '✅ Đồng Bộ Thành Công!',
-          `Đã chuyển thành công ${result.syncedCount} bản ghi nhật ký lên Notion Workspace của bạn!`
+          '✅ Sync Successful!',
+          `Successfully pushed ${result.syncedCount} journal records to your Notion Workspace!`
         );
         if (onSyncComplete) onSyncComplete();
       } else {
         Alert.alert(
-          'Đồng bộ hoàn tất một phần',
-          `Đã đồng bộ ${result.syncedCount} bản ghi.\nLỗi ${result.errorCount} bản ghi:\n${result.errors.slice(0, 3).join('\n')}`
+          'Sync Partially Completed',
+          `Synced ${result.syncedCount} records.\nFailed ${result.errorCount} records:\n${result.errors.slice(0, 3).join('\n')}`
         );
       }
     } catch (err) {
       setIsLoading(false);
-      Alert.alert('Lỗi Đồng Bộ', err.message);
+      Alert.alert('Sync Error', err.message);
     }
   };
 
@@ -99,31 +101,31 @@ export function NotionConfigModal({ visible, onClose, onSyncComplete }) {
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <View style={styles.container}>
-          <LinearGradient colors={['#171F2E', '#0A0D14']} style={styles.cardGradient}>
+        <View style={[styles.container, { borderColor: colors.surfaceBorder, backgroundColor: colors.bg }]}>
+          <LinearGradient colors={isDark ? ['#171F2E', '#0A0D14'] : [colors.surface, colors.bg]} style={styles.cardGradient}>
             {/* Top Header */}
             <View style={styles.headerRow}>
               <View style={styles.titleWithIcon}>
-                <Cloud size={20} color={THEME.colors.primary} />
-                <Text style={styles.modalTitle}>Đồng Bộ Notion Workspace</Text>
+                <Cloud size={20} color={colors.primary} />
+                <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Sync Notion Workspace</Text>
               </View>
               <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-                <X size={20} color={THEME.colors.textSecondary} />
+                <X size={20} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.subtitle}>
-                Tự động đẩy toàn bộ ghi chú và nhật ký kỷ luật cá nhân lên database Notion của bạn (Direct Client-to-Cloud).
+              <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                Automatically push all personal discipline notes and journals to your Notion database (Direct Client-to-Cloud).
               </Text>
 
               {/* Form inputs */}
               <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>NOTION INTEGRATION TOKEN</Text>
+                <Text style={[styles.inputLabel, { color: colors.textMuted }]}>NOTION INTEGRATION TOKEN</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { backgroundColor: colors.surfaceSubtle, borderColor: colors.surfaceBorder, color: colors.textPrimary }]}
                   placeholder="secret_xxxxxxxxxxxxxxxxxxxxxxxxxx"
-                  placeholderTextColor={THEME.colors.textMuted}
+                  placeholderTextColor={colors.textMuted}
                   value={token}
                   onChangeText={setToken}
                   secureTextEntry
@@ -132,11 +134,11 @@ export function NotionConfigModal({ visible, onClose, onSyncComplete }) {
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={styles.inputLabel}>NOTION DATABASE ID</Text>
+                <Text style={[styles.inputLabel, { color: colors.textMuted }]}>NOTION DATABASE ID</Text>
                 <TextInput
-                  style={styles.input}
-                  placeholder="32 ký tự ID của Notion Database"
-                  placeholderTextColor={THEME.colors.textMuted}
+                  style={[styles.input, { backgroundColor: colors.surfaceSubtle, borderColor: colors.surfaceBorder, color: colors.textPrimary }]}
+                  placeholder="32-character Notion Database ID"
+                  placeholderTextColor={colors.textMuted}
                   value={databaseId}
                   onChangeText={setDatabaseId}
                   autoCapitalize="none"
@@ -145,16 +147,16 @@ export function NotionConfigModal({ visible, onClose, onSyncComplete }) {
 
               {/* Test Connection Button & Result */}
               <TouchableOpacity
-                style={styles.testBtn}
+                style={[styles.testBtn, { backgroundColor: colors.surfaceSubtle }]}
                 onPress={handleTestConnection}
                 disabled={isTesting || isLoading}
               >
                 {isTesting ? (
-                  <ActivityIndicator size="small" color={THEME.colors.primary} />
+                  <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
                   <>
-                    <RefreshCw size={15} color={THEME.colors.primary} />
-                    <Text style={styles.testBtnText}>Kiểm Tra Kết Nối Database</Text>
+                    <RefreshCw size={15} color={colors.primary} />
+                    <Text style={[styles.testBtnText, { color: colors.primary }]}>Test Database Connection</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -162,16 +164,16 @@ export function NotionConfigModal({ visible, onClose, onSyncComplete }) {
               {testResult && (
                 <View style={[
                   styles.testResultBox,
-                  { borderColor: testResult.success ? THEME.colors.success : THEME.colors.danger }
+                  { backgroundColor: colors.surfaceSubtle, borderColor: testResult.success ? colors.success : colors.danger }
                 ]}>
                   {testResult.success ? (
-                    <CheckCircle2 size={16} color={THEME.colors.success} />
+                    <CheckCircle2 size={16} color={colors.success} />
                   ) : (
-                    <AlertCircle size={16} color={THEME.colors.danger} />
+                    <AlertCircle size={16} color={colors.danger} />
                   )}
                   <Text style={[
                     styles.testResultText,
-                    { color: testResult.success ? THEME.colors.success : THEME.colors.danger }
+                    { color: testResult.success ? colors.success : colors.danger }
                   ]}>
                     {testResult.message}
                   </Text>
@@ -180,28 +182,28 @@ export function NotionConfigModal({ visible, onClose, onSyncComplete }) {
 
               {/* Live Sync Progress */}
               {syncProgress && (
-                <View style={styles.syncProgressBox}>
-                  <ActivityIndicator size="small" color={THEME.colors.warning} />
-                  <Text style={styles.syncProgressText}>{syncProgress.text}</Text>
+                <View style={[styles.syncProgressBox, { backgroundColor: `${colors.warning}15`, borderColor: `${colors.warning}40` }]}>
+                  <ActivityIndicator size="small" color={colors.warning} />
+                  <Text style={[styles.syncProgressText, { color: colors.warning }]}>{syncProgress.text}</Text>
                 </View>
               )}
 
               {/* Guide Note */}
-              <View style={styles.guideBox}>
-                <Shield size={16} color={THEME.colors.freeze} />
-                <Text style={styles.guideText}>
-                  Bảo mật Super Client: Dữ liệu được đẩy trực tiếp từ điện thoại sang Notion API, không đi qua bất kỳ server trung gian nào.
+              <View style={[styles.guideBox, { backgroundColor: `${colors.freeze}10`, borderColor: `${colors.freeze}30` }]}>
+                <Shield size={16} color={colors.freeze} />
+                <Text style={[styles.guideText, { color: colors.textSecondary }]}>
+                  Super Client Security: Data is pushed directly from your phone to Notion API, completely bypassing intermediary servers.
                 </Text>
               </View>
 
               {/* Action Buttons */}
               <View style={styles.buttonRow}>
                 <TouchableOpacity
-                  style={[styles.actionBtn, styles.saveBtn]}
+                  style={[styles.actionBtn, styles.saveBtn, { backgroundColor: colors.surfaceSubtle }]}
                   onPress={handleSave}
                   disabled={isLoading}
                 >
-                  <Text style={styles.saveBtnText}>Lưu Cấu Hình</Text>
+                  <Text style={[styles.saveBtnText, { color: colors.textPrimary }]}>Save Config</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -218,7 +220,7 @@ export function NotionConfigModal({ visible, onClose, onSyncComplete }) {
                     ) : (
                       <>
                         <Cloud size={16} color="#FFFFFF" />
-                        <Text style={styles.syncBtnText}>Đồng Bộ Ngay</Text>
+                        <Text style={styles.syncBtnText}>Sync Now</Text>
                       </>
                     )}
                   </LinearGradient>
@@ -247,7 +249,6 @@ const styles = StyleSheet.create({
     borderRadius: THEME.radius.xl,
     overflow: 'hidden',
     borderWidth: 1.5,
-    borderColor: THEME.colors.surfaceBorder,
     elevation: 20,
   },
   cardGradient: {
@@ -265,16 +266,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   modalTitle: {
-    color: THEME.colors.textPrimary,
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: THEME.typography.title2.fontFamily,
   },
   closeBtn: {
     padding: 4,
   },
   subtitle: {
-    color: THEME.colors.textSecondary,
     fontSize: 13,
+    fontFamily: THEME.typography.body.fontFamily,
     lineHeight: 18,
     marginBottom: THEME.spacing.md,
   },
@@ -282,42 +282,36 @@ const styles = StyleSheet.create({
     marginBottom: THEME.spacing.md,
   },
   inputLabel: {
-    color: THEME.colors.textMuted,
     fontSize: 10,
-    fontWeight: '800',
+    fontFamily: THEME.typography.title2.fontFamily,
     letterSpacing: 0.5,
     marginBottom: 6,
   },
   input: {
-    backgroundColor: '#0F141F',
     borderWidth: 1,
-    borderColor: THEME.colors.surfaceBorder,
     borderRadius: THEME.radius.md,
-    color: THEME.colors.textPrimary,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 13,
+    fontFamily: THEME.typography.body.fontFamily,
   },
   testBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#1E293B',
     paddingVertical: 10,
     borderRadius: THEME.radius.md,
     marginBottom: THEME.spacing.sm,
   },
   testBtnText: {
-    color: THEME.colors.primary,
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: THEME.typography.bodyBold.fontFamily,
   },
   testResultBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#0F141F',
     padding: 10,
     borderRadius: THEME.radius.md,
     borderWidth: 1,
@@ -325,39 +319,34 @@ const styles = StyleSheet.create({
   },
   testResultText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: THEME.typography.bodyBold.fontFamily,
     flex: 1,
   },
   syncProgressBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: `${THEME.colors.warning}15`,
     padding: 10,
     borderRadius: THEME.radius.md,
     borderWidth: 1,
-    borderColor: `${THEME.colors.warning}40`,
     marginBottom: THEME.spacing.sm,
   },
   syncProgressText: {
-    color: THEME.colors.warning,
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: THEME.typography.bodyBold.fontFamily,
     flex: 1,
   },
   guideBox: {
     flexDirection: 'row',
     gap: 8,
-    backgroundColor: `${THEME.colors.freeze}10`,
     padding: 10,
     borderRadius: THEME.radius.md,
     borderWidth: 1,
-    borderColor: `${THEME.colors.freeze}30`,
     marginVertical: THEME.spacing.sm,
   },
   guideText: {
-    color: THEME.colors.textSecondary,
     fontSize: 11,
+    fontFamily: THEME.typography.body.fontFamily,
     lineHeight: 16,
     flex: 1,
   },
@@ -372,15 +361,13 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   saveBtn: {
-    backgroundColor: '#1E293B',
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 12,
   },
   saveBtnText: {
-    color: THEME.colors.textPrimary,
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: THEME.typography.bodyBold.fontFamily,
   },
   syncBtn: {},
   syncBtnGradient: {
@@ -393,6 +380,6 @@ const styles = StyleSheet.create({
   syncBtnText: {
     color: '#FFFFFF',
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: THEME.typography.bodyBold.fontFamily,
   },
 });

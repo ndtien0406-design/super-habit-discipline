@@ -8,8 +8,8 @@ let dbInstance = null;
 class WebMemoryDatabase {
   constructor() {
     this.habits = [
-      { id: 1, title: 'Chạy Bộ 5km Buổi Sáng', type: 'build', color_code: '#10B981', reminder_time: '06:00', freezes_left: 3, created_at: new Date().toISOString() },
-      { id: 2, title: 'Không Thức Khuya Sau 23:00', type: 'quit', color_code: '#F59E0B', reminder_time: '22:30', freezes_left: 3, created_at: new Date().toISOString() }
+      { id: 1, title: 'Morning 5km Run', type: 'build', color_code: '#10B981', reminder_time: '06:00', target_streak: 21, target_type: 'streak', target_date: null, freezes_left: 3, created_at: new Date().toISOString() },
+      { id: 2, title: 'Don\\'t Stay Up Past 23:00', type: 'quit', color_code: '#F59E0B', reminder_time: '22:30', target_streak: 66, target_type: 'streak', target_date: null, freezes_left: 3, created_at: new Date().toISOString() }
     ];
     this.checkins = [];
     this.settings = {};
@@ -33,10 +33,10 @@ class WebMemoryDatabase {
       });
     }
     if (sql.includes('FROM checkins WHERE habit_id = ? AND image_path IS NOT NULL')) {
-      return this.checkins.filter(c => c.habit_id === params[0] && c.image_path != null);
+      return this.checkins.filter(c => String(c.habit_id) === String(params[0]) && c.image_path != null);
     }
     if (sql.includes('FROM checkins WHERE habit_id = ?')) {
-      return this.checkins.filter(c => c.habit_id === params[0]);
+      return this.checkins.filter(c => String(c.habit_id) === String(params[0]));
     }
     if (sql.includes('FROM app_settings')) {
       return Object.entries(this.settings).map(([key, value]) => ({ key, value }));
@@ -46,10 +46,10 @@ class WebMemoryDatabase {
 
   async getFirstAsync(sql, params = []) {
     if (sql.includes('FROM habits WHERE id = ?')) {
-      return this.habits.find(h => h.id === params[0]) || null;
+      return this.habits.find(h => String(h.id) === String(params[0])) || null;
     }
     if (sql.includes('FROM checkins WHERE habit_id = ? AND checkin_date = ?')) {
-      return this.checkins.find(c => c.habit_id === params[0] && c.checkin_date === params[1]) || null;
+      return this.checkins.find(c => String(c.habit_id) === String(params[0]) && c.checkin_date === params[1]) || null;
     }
     if (sql.includes('FROM app_settings WHERE key = ?')) {
       const val = this.settings[params[0]];
@@ -65,15 +65,18 @@ class WebMemoryDatabase {
         id: newId,
         title: params[0],
         type: params[1],
-        color_code: params[2] || '#6366F1',
-        reminder_time: params[3] || '08:00',
-        freezes_left: 3,
+        color_code: params[2],
+        reminder_time: params[3],
+        target_streak: params[4] || 21,
+        target_type: params[5] || 'streak',
+        target_date: params[6],
+        freezes_left: params[7] || 3,
         created_at: new Date().toISOString()
       });
       return { lastInsertRowId: newId };
     }
     if (sql.includes('UPDATE habits SET freezes_left = ? WHERE id = ?')) {
-      const habit = this.habits.find(h => h.id === params[1]);
+      const habit = this.habits.find(h => String(h.id) === String(params[1]));
       if (habit) habit.freezes_left = params[0];
       return {};
     }
@@ -82,14 +85,14 @@ class WebMemoryDatabase {
       return {};
     }
     if (sql.includes('DELETE FROM habits WHERE id = ?')) {
-      this.habits = this.habits.filter(h => h.id !== params[0]);
-      this.checkins = this.checkins.filter(c => c.habit_id !== params[0]);
+      this.habits = this.habits.filter(h => String(h.id) !== String(params[0]));
+      this.checkins = this.checkins.filter(c => String(c.habit_id) !== String(params[0]));
       return {};
     }
     if (sql.includes('INSERT INTO checkins')) {
       const habitId = params[0];
       const date = params[1];
-      const existingIdx = this.checkins.findIndex(c => c.habit_id === habitId && c.checkin_date === date);
+      const existingIdx = this.checkins.findIndex(c => String(c.habit_id) === String(habitId) && c.checkin_date === date);
       const record = {
         id: existingIdx >= 0 ? this.checkins[existingIdx].id : this.checkins.length + 1,
         habit_id: habitId,
@@ -156,6 +159,9 @@ export async function initDatabase(db) {
       type TEXT NOT NULL CHECK(type IN ('build', 'quit')),
       color_code TEXT NOT NULL DEFAULT '#6366F1',
       reminder_time TEXT NOT NULL DEFAULT '08:00',
+      target_streak INTEGER NOT NULL DEFAULT 21,
+      target_type TEXT NOT NULL DEFAULT 'streak',
+      target_date TEXT,
       freezes_left INTEGER NOT NULL DEFAULT 3,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
@@ -180,6 +186,25 @@ export async function initDatabase(db) {
     CREATE INDEX IF NOT EXISTS idx_checkins_habit_date ON checkins(habit_id, checkin_date);
     CREATE INDEX IF NOT EXISTS idx_checkins_date ON checkins(checkin_date);
   `);
+
+  // Migration: Add target_streak and target_type if it doesn't exist
+  try {
+    await db.execAsync('ALTER TABLE habits ADD COLUMN target_streak INTEGER NOT NULL DEFAULT 21;');
+  } catch (e) {
+    // Column might already exist, ignore
+  }
+
+  try {
+    await db.execAsync("ALTER TABLE habits ADD COLUMN target_type TEXT NOT NULL DEFAULT 'streak';");
+  } catch (e) {
+    // Column might already exist, ignore
+  }
+
+  try {
+    await db.execAsync("ALTER TABLE habits ADD COLUMN target_date TEXT;");
+  } catch (e) {
+    // Column might already exist, ignore
+  }
 
   // Check and run monthly freeze reset
   await checkAndResetMonthlyFreezes(db);

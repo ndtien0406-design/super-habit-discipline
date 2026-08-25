@@ -2,10 +2,11 @@ import React from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Sparkles, Trophy, Check } from 'lucide-react-native';
-import { THEME } from '../theme/index.js';
+import { useAppTheme } from '../theme/index.js';
 import { getMilestoneDetails } from '../utils/streakEngine.js';
 
 export function MilestoneModal({ visible, streakCount = 7, habitTitle = '', onClose }) {
+  const { THEME, colors, isDark } = useAppTheme();
   const details = getMilestoneDetails(streakCount);
   if (!details) return null;
 
@@ -16,14 +17,9 @@ export function MilestoneModal({ visible, streakCount = 7, habitTitle = '', onCl
       animationType="fade"
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
-        <View style={styles.container}>
-          <LinearGradient
-            colors={['#1F293D', '#0F141F']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.gradientCard}
-          >
+      <View style={[styles.overlay, { backgroundColor: isDark ? 'rgba(26,14,2,0.85)' : 'rgba(255,247,233,0.85)' }]}>
+        <View style={[styles.container, { backgroundColor: colors.surface }]}>
+          <View style={styles.gradientCard}>
             {/* Celebration Badge */}
             <View style={[styles.badgeContainer, { backgroundColor: `${details.accent}20`, borderColor: details.accent }]}>
               <Text style={styles.badgeEmoji}>{details.badge}</Text>
@@ -34,29 +30,29 @@ export function MilestoneModal({ visible, streakCount = 7, habitTitle = '', onCl
               <View style={styles.sparkleRow}>
                 <Sparkles size={18} color={details.accent} />
                 <Text style={[styles.milestoneTag, { color: details.accent }]}>
-                  CỘT MỐC ĐẠT ĐƯỢC
+                  MILESTONE REACHED
                 </Text>
                 <Sparkles size={18} color={details.accent} />
               </View>
-              <Text style={styles.title}>{details.title}</Text>
-              <Text style={styles.habitSubtitle}>
-                Thói quen: <Text style={{ color: THEME.colors.textPrimary, fontWeight: '700' }}>{habitTitle}</Text>
+              <Text style={[styles.title, { color: colors.textPrimary }]}>{details.title}</Text>
+              <Text style={[styles.habitSubtitle, { color: colors.textSecondary }]}>
+                Habit: <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>{habitTitle}</Text>
               </Text>
             </View>
 
             {/* Streak Number Big Display */}
-            <View style={styles.streakHighlight}>
+            <View style={[styles.streakHighlight, { borderColor: `${colors.warning}30` }]}>
               <LinearGradient
-                colors={['#FF7A0025', '#FF005515']}
+                colors={[`${colors.warning}25`, `${colors.primary}15`]}
                 style={styles.streakHighlightGradient}
               >
-                <Text style={styles.streakNumber}>{streakCount}</Text>
-                <Text style={styles.streakLabel}>NGÀY LIÊN TIẾP</Text>
+                <Text style={[styles.streakNumber, { color: colors.warning }]}>{streakCount}</Text>
+                <Text style={[styles.streakLabel, { color: colors.textSecondary }]}>CONSECUTIVE DAYS</Text>
               </LinearGradient>
             </View>
 
             {/* Description */}
-            <Text style={styles.description}>
+            <Text style={[styles.description, { color: colors.textSecondary }]}>
               {details.description}
             </Text>
 
@@ -71,10 +67,10 @@ export function MilestoneModal({ visible, streakCount = 7, habitTitle = '', onCl
                 style={styles.buttonGradient}
               >
                 <Check size={20} color="#FFFFFF" />
-                <Text style={styles.buttonText}>Tuyệt Vời, Tiếp Tục Giữ Kỷ Luật!</Text>
+                <Text style={styles.buttonText}>Awesome, Keep It Up!</Text>
               </LinearGradient>
             </TouchableOpacity>
-          </LinearGradient>
+          </View>
         </View>
       </View>
     </Modal>
@@ -84,7 +80,6 @@ export function MilestoneModal({ visible, streakCount = 7, habitTitle = '', onCl
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(5, 8, 14, 0.85)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: THEME.spacing.lg,
@@ -94,8 +89,10 @@ const styles = StyleSheet.create({
     maxWidth: 380,
     borderRadius: THEME.radius.xl,
     overflow: 'hidden',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
     elevation: 20,
   },
   gradientCard: {
@@ -127,19 +124,18 @@ const styles = StyleSheet.create({
   },
   milestoneTag: {
     fontSize: 12,
-    fontWeight: '800',
+    fontFamily: THEME.typography.bodyBold.fontFamily,
     letterSpacing: 1,
   },
   title: {
-    color: THEME.colors.textPrimary,
     fontSize: 22,
-    fontWeight: '800',
+    fontFamily: THEME.typography.title2.fontFamily,
     textAlign: 'center',
     marginTop: 4,
   },
   habitSubtitle: {
-    color: THEME.colors.textSecondary,
     fontSize: 13,
+    fontFamily: THEME.typography.body.fontFamily,
     marginTop: 4,
     textAlign: 'center',
   },
@@ -156,20 +152,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   streakNumber: {
-    color: THEME.colors.warning,
     fontSize: 42,
-    fontWeight: '900',
+    fontFamily: THEME.typography.hero.fontFamily,
     letterSpacing: -1,
   },
   streakLabel: {
-    color: THEME.colors.textSecondary,
     fontSize: 11,
-    fontWeight: '800',
+    fontFamily: THEME.typography.bodyBold.fontFamily,
     letterSpacing: 1.5,
   },
   description: {
-    color: THEME.colors.textSecondary,
     fontSize: 14,
+    fontFamily: THEME.typography.body.fontFamily,
     lineHeight: 21,
     textAlign: 'center',
     marginBottom: THEME.spacing.xl,
@@ -189,6 +183,6 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#FFFFFF',
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: THEME.typography.bodyBold.fontFamily,
   },
 });

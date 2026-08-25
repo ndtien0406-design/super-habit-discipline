@@ -4,21 +4,21 @@ export const MILESTONES = [7, 21, 90];
 
 export const MILESTONE_INFO = {
   7: {
-    title: 'Khởi Đầu Thần Tốc (7 Ngày)',
+    title: 'Lightning Start (7 Days)',
     badge: '⚡',
-    description: 'Bạn đã vượt qua tuần đầu tiên đầy thử thách! Não bộ bắt đầu hình thành phản xạ mới.',
+    description: 'You\'ve conquered the challenging first week! Your brain is forming new reflexes.',
     accent: '#10B981',
   },
   21: {
-    title: 'Đột Phá Kỷ Luật (21 Ngày)',
+    title: 'Discipline Breakthrough (21 Days)',
     badge: '🔥',
-    description: '21 ngày tạo lập thói quen vàng! Hành vi này đã trở thành một phần trong con người bạn.',
+    description: '21 days to form a golden habit! This behavior has become a part of who you are.',
     accent: '#F59E0B',
   },
   90: {
-    title: 'Bậc Thầy Tự Chủ (90 Ngày)',
+    title: 'Master of Self-Control (90 Days)',
     badge: '👑',
-    description: '90 ngày thay đổi lối sống vĩnh viễn! Bạn đã làm chủ hoàn toàn kỷ luật cá nhân.',
+    description: '90 days to permanently change your lifestyle! You have completely mastered personal discipline.',
     accent: '#A855F7',
   }
 };
@@ -57,6 +57,7 @@ export function calculateStreakMetrics(checkins = [], today = getTodayDateString
     return {
       currentStreak: 0,
       bestStreak: 0,
+      totalCompletedDays: 0,
       todayStatus: 'pending',
       isTodayCompleted: false
     };
@@ -127,9 +128,13 @@ export function calculateStreakMetrics(checkins = [], today = getTodayDateString
 
   bestStreak = Math.max(bestStreak, currentStreak);
 
+  // Calculate total completed days (including frozen days which count towards goal)
+  const totalCompletedDays = Array.from(checkinMap.values()).filter(status => status === 'completed' || status === 'frozen').length;
+
   return {
     currentStreak,
     bestStreak,
+    totalCompletedDays,
     todayStatus,
     isTodayCompleted
   };
@@ -182,7 +187,7 @@ export function detectAndProcessMissedDays(habit, existingCheckins = [], today =
           checkin_date: date,
           status: 'frozen',
           day_number: runningDayNumber,
-          note: 'Bảo vệ tự động bằng Thẻ Đóng Băng (Freeze)',
+          note: 'Auto-protected by Freeze Card',
           image_path: null
         });
       } else {
@@ -193,7 +198,7 @@ export function detectAndProcessMissedDays(habit, existingCheckins = [], today =
           checkin_date: date,
           status: 'failed',
           day_number: 0,
-          note: 'Bỏ lỡ điểm danh (Đã hết hạn mức 3 lần Freeze trong tháng)',
+          note: 'Missed check-in (Monthly quota of 3 Freezes exhausted)',
           image_path: null
         });
       }

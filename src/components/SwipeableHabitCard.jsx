@@ -1,30 +1,29 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Camera, ShieldCheck, Flame, Trophy, Snowflake, ChevronRight, CheckCircle2 } from 'lucide-react-native';
-import { THEME } from '../theme/index.js';
+import { Camera, ShieldCheck, Flame, Trophy, Snowflake, ChevronRight, CheckCircle2, Calendar } from 'lucide-react-native';
+import { useAppTheme } from '../theme/index.js';
+import { getDaysDifference, getTodayDateString, formatDisplayDate } from '../utils/dateHelper.js';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 export const CARD_WIDTH = Math.min(SCREEN_WIDTH * 0.85, 360);
 
-export function SwipeableHabitCard({ habit, onCheckinPress, onCardPress }) {
+  const { THEME, colors, isDark } = useAppTheme();
+  
   const isBuild = habit.type === 'build';
   const isCompleted = habit.isTodayCompleted;
-  const habitColor = habit.color_code || THEME.colors.primary;
+  const habitColor = habit.color_code || colors.primary;
 
   return (
     <View style={styles.cardContainer}>
       <TouchableOpacity
         activeOpacity={0.92}
         onPress={() => onCardPress(habit)}
-        style={[styles.cardWrapper, { borderColor: `${habitColor}50` }]}
+        onLongPress={() => onCardLongPress && onCardLongPress(habit)}
+        delayLongPress={600}
+        style={[styles.cardWrapper, { backgroundColor: colors.surface, shadowColor: colors.textPrimary }]}
       >
-        <LinearGradient
-          colors={['#171F2E', '#0F141F']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.cardGradient}
-        >
+        <View style={[styles.cardInner, { backgroundColor: colors.surface }]}>
           {/* Top color accent bar */}
           <View style={[styles.topAccentBar, { backgroundColor: habitColor }]} />
 
@@ -32,113 +31,136 @@ export function SwipeableHabitCard({ habit, onCheckinPress, onCardPress }) {
           <View style={styles.headerRow}>
             <View style={[styles.typeBadge, { backgroundColor: `${habitColor}25` }]}>
               {isBuild ? (
-                <Camera size={13} color={habitColor} />
+                <Camera size={16} color={habitColor} />
               ) : (
-                <ShieldCheck size={13} color={habitColor} />
+                <ShieldCheck size={16} color={habitColor} />
               )}
-              <Text style={[styles.typeBadgeText, { color: habitColor }]}>
-                {isBuild ? 'XÂY DỰNG (BUILD)' : 'TỪ BỎ / KỶ LUẬT (QUIT)'}
-              </Text>
             </View>
 
             {/* Freeze quota indicator (max 3/month) */}
-            <View style={styles.freezeBadge}>
-              <Snowflake size={13} color={THEME.colors.freeze} />
-              <Text style={styles.freezeBadgeText}>
-                {habit.freezes_left ?? 3}/3 Freeze
+            <View style={[styles.freezeBadge, { backgroundColor: `${colors.freeze}10`, borderColor: `${colors.freeze}30` }]}>
+              <Snowflake size={13} color={colors.freeze} />
+              <Text style={[styles.freezeBadgeText, { color: colors.freeze }]}>
+                {(typeof habit.freezes_left === 'number' && !isNaN(habit.freezes_left)) ? habit.freezes_left : 3}/3 Freeze
               </Text>
             </View>
           </View>
 
           {/* Title & Reminder time */}
           <View style={styles.titleSection}>
-            <Text style={styles.habitTitle} numberOfLines={2}>
+            <Text style={[styles.habitTitle, { color: colors.textPrimary }]} numberOfLines={2}>
               {habit.title}
             </Text>
-            <Text style={styles.reminderTimeText}>
-              ⏰ Nhắc nhở: {habit.reminder_time || '08:00'} hàng ngày
+            <Text style={[styles.reminderTimeText, { color: colors.textSecondary }]}>
+              ⏰ Reminder: {habit.reminder_time || '08:00'} daily
             </Text>
           </View>
 
-          {/* Stats Row: Current Streak & Best Streak */}
+          {/* Stats Row: Current Streak & Best Streak OR Deadline */}
           <View style={styles.statsRow}>
-            {/* Current Streak */}
-            <View style={[styles.statBox, { borderColor: `${THEME.colors.warning}30` }]}>
-              <View style={styles.statIconHeader}>
-                <Flame size={18} color={THEME.colors.warning} />
-                <Text style={styles.statLabel}>STREAK HIỆN TẠI</Text>
-              </View>
-              <View style={styles.statValueRow}>
-                <Text style={[styles.statValue, { color: THEME.colors.warning }]}>
-                  {habit.currentStreak || 0}
-                </Text>
-                <Text style={styles.statUnit}>ngày</Text>
-              </View>
-            </View>
+            {habit.target_type === 'date' ? (() => {
+              const daysLeft = habit.target_date ? getDaysDifference(getTodayDateString(), habit.target_date) : 0;
+              return (
+                <>
+                  <View style={[styles.statBox, { backgroundColor: colors.surfaceSubtle }]}>
+                    <View style={styles.statIconHeader}>
+                      <Flame size={18} color={colors.warning} />
+                      <Text style={[styles.statLabel, { color: colors.textMuted }]}>CURRENT STREAK</Text>
+                    </View>
+                    <View style={styles.statValueRow}>
+                      <Text style={[styles.statValue, { color: colors.warning }]}>
+                        {habit.currentStreak || 0}
+                      </Text>
+                      <Text style={[styles.statUnit, { color: colors.textSecondary }]}>days</Text>
+                    </View>
+                  </View>
 
-            {/* Best Streak */}
-            <View style={[styles.statBox, { borderColor: `${THEME.colors.primary}30` }]}>
-              <View style={styles.statIconHeader}>
-                <Trophy size={16} color={THEME.colors.primary} />
-                <Text style={styles.statLabel}>KỶ LỤC DÀI NHẤT</Text>
-              </View>
-              <View style={styles.statValueRow}>
-                <Text style={[styles.statValue, { color: THEME.colors.primary }]}>
-                  {habit.bestStreak || 0}
-                </Text>
-                <Text style={styles.statUnit}>ngày</Text>
-              </View>
-            </View>
+                  <View style={[styles.statBox, { backgroundColor: colors.surfaceSubtle }]}>
+                    <View style={styles.statIconHeader}>
+                      <Calendar size={16} color={colors.primary} />
+                      <Text style={[styles.statLabel, { color: colors.textMuted }]}>DAYS LEFT</Text>
+                    </View>
+                    <View style={styles.statValueRow}>
+                      <Text style={[styles.statValue, { color: colors.primary }]}>
+                        {Math.max(0, daysLeft)}
+                      </Text>
+                      <Text style={[styles.statUnit, { color: colors.textSecondary }]}>days</Text>
+                    </View>
+                  </View>
+                </>
+              );
+            })() : (
+              <>
+                {/* Current Streak */}
+                <View style={[styles.statBox, { backgroundColor: colors.surfaceSubtle }]}>
+                  <View style={styles.statIconHeader}>
+                    <Flame size={18} color={colors.warning} />
+                    <Text style={[styles.statLabel, { color: colors.textMuted }]}>CURRENT STREAK</Text>
+                  </View>
+                  <View style={styles.statValueRow}>
+                    <Text style={[styles.statValue, { color: colors.warning }]}>
+                      {habit.currentStreak || 0}
+                    </Text>
+                    <Text style={[styles.statUnit, { color: colors.textSecondary }]}>days</Text>
+                  </View>
+                </View>
+
+                {/* Best Streak */}
+                <View style={[styles.statBox, { backgroundColor: colors.surfaceSubtle }]}>
+                  <View style={styles.statIconHeader}>
+                    <Trophy size={16} color={colors.primary} />
+                    <Text style={[styles.statLabel, { color: colors.textMuted }]}>BEST STREAK</Text>
+                  </View>
+                  <View style={styles.statValueRow}>
+                    <Text style={[styles.statValue, { color: colors.primary }]}>
+                      {habit.bestStreak || 0}
+                    </Text>
+                    <Text style={[styles.statUnit, { color: colors.textSecondary }]}>days</Text>
+                  </View>
+                </View>
+              </>
+            )}
           </View>
 
           {/* Action Button Section */}
           <View style={styles.actionSection}>
             {isCompleted ? (
-              <View style={styles.completedBanner}>
-                <CheckCircle2 size={20} color={THEME.colors.success} />
-                <Text style={styles.completedText}>Đã hoàn thành hôm nay!</Text>
+              <View style={[styles.completedBanner, { backgroundColor: `${colors.success}10`, borderColor: `${colors.success}30` }]}>
+                <CheckCircle2 size={20} color={colors.success} />
+                <Text style={[styles.completedText, { color: colors.success }]}>Completed today!</Text>
               </View>
             ) : (
               <TouchableOpacity
                 activeOpacity={0.85}
                 style={[
                   styles.actionButton,
-                  { backgroundColor: isBuild ? habitColor : THEME.colors.warning }
+                  { backgroundColor: isBuild ? habitColor : colors.warning }
                 ]}
                 onPress={() => onCheckinPress(habit)}
               >
-                <LinearGradient
-                  colors={
-                    isBuild
-                      ? [habitColor, `${habitColor}CC`]
-                      : ['#F59E0B', '#D97706']
-                  }
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.actionButtonGradient}
-                >
+                <View style={styles.actionButtonInner}>
                   {isBuild ? (
                     <>
-                      <Camera size={20} color="#FFFFFF" />
-                      <Text style={styles.actionButtonText}>Chụp Ảnh Kỷ Luật</Text>
+                      <Camera size={20} color={isDark ? '#000' : '#FFF'} />
+                      <Text style={[styles.actionButtonText, { color: isDark ? '#000' : '#FFF' }]}>Log Proof (Photo)</Text>
                     </>
                   ) : (
                     <>
-                      <ShieldCheck size={20} color="#FFFFFF" />
-                      <Text style={styles.actionButtonText}>I Survived (Tôi Vượt Qua)</Text>
+                      <ShieldCheck size={20} color={isDark ? '#000' : '#FFF'} />
+                      <Text style={[styles.actionButtonText, { color: isDark ? '#000' : '#FFF' }]}>I Survived</Text>
                     </>
                   )}
-                </LinearGradient>
+                </View>
               </TouchableOpacity>
             )}
 
             {/* Tap for details hint */}
             <View style={styles.detailHintRow}>
-              <Text style={styles.detailHintText}>Xem chi tiết lịch sử & video recap</Text>
-              <ChevronRight size={14} color={THEME.colors.textMuted} />
+              <Text style={[styles.detailHintText, { color: colors.textMuted }]}>View history & recap</Text>
+              <ChevronRight size={14} color={colors.textMuted} />
             </View>
           </View>
-        </LinearGradient>
+        </View>
       </TouchableOpacity>
     </View>
   );
@@ -151,17 +173,14 @@ const styles = StyleSheet.create({
     marginVertical: 12,
   },
   cardWrapper: {
-    borderRadius: THEME.radius.xl,
+    borderRadius: THEME.radius.lg,
     overflow: 'hidden',
-    borderWidth: 1.5,
-    backgroundColor: THEME.colors.surface,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
   },
-  cardGradient: {
+  cardInner: {
     padding: THEME.spacing.lg,
     minHeight: 380,
     justifyContent: 'space-between',
@@ -182,46 +201,39 @@ const styles = StyleSheet.create({
   typeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    justifyContent: 'center',
+    width: 32,
+    height: 32,
     borderRadius: THEME.radius.full,
-    gap: 6,
-  },
-  typeBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.5,
   },
   freezeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: `${THEME.colors.freeze}18`,
     paddingHorizontal: 9,
     paddingVertical: 5,
     borderRadius: THEME.radius.full,
     gap: 4,
     borderWidth: 1,
-    borderColor: `${THEME.colors.freeze}40`,
   },
   freezeBadgeText: {
-    color: THEME.colors.freeze,
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: THEME.typography.small.fontFamily,
+    fontWeight: THEME.typography.small.fontWeight,
+    textTransform: THEME.typography.small.textTransform,
   },
   titleSection: {
     marginBottom: THEME.spacing.md,
   },
   habitTitle: {
     color: THEME.colors.textPrimary,
-    fontSize: 22,
-    fontWeight: '800',
-    letterSpacing: -0.4,
-    marginBottom: 6,
+    fontSize: 24,
+    fontFamily: THEME.typography.title1.fontFamily,
+    letterSpacing: THEME.typography.title1.letterSpacing,
+    marginBottom: 8,
   },
   reminderTimeText: {
-    color: THEME.colors.textSecondary,
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: THEME.typography.body.fontFamily,
   },
   statsRow: {
     flexDirection: 'row',
@@ -230,21 +242,20 @@ const styles = StyleSheet.create({
   },
   statBox: {
     flex: 1,
-    backgroundColor: '#0F141F',
     borderRadius: THEME.radius.md,
-    padding: 12,
-    borderWidth: 1,
+    padding: 16,
+    // border removed
   },
   statIconHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    marginBottom: 6,
+    gap: 6,
+    marginBottom: 8,
   },
   statLabel: {
-    color: THEME.colors.textMuted,
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: THEME.typography.small.fontFamily,
+    textTransform: THEME.typography.small.textTransform,
     letterSpacing: 0.5,
   },
   statValueRow: {
@@ -253,24 +264,24 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   statValue: {
-    fontSize: 26,
-    fontWeight: '800',
+    fontSize: 32,
+    fontFamily: THEME.typography.hero.fontFamily,
+    letterSpacing: THEME.typography.hero.letterSpacing,
   },
   statUnit: {
-    color: THEME.colors.textSecondary,
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 13,
+    fontFamily: THEME.typography.bodyBold.fontFamily,
+    fontWeight: THEME.typography.bodyBold.fontWeight,
   },
   actionSection: {
     marginTop: THEME.spacing.md,
-    gap: 10,
+    gap: 12,
   },
   actionButton: {
-    borderRadius: THEME.radius.md,
+    borderRadius: THEME.radius.full,
     overflow: 'hidden',
-    elevation: 4,
   },
-  actionButtonGradient: {
+  actionButtonInner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -278,36 +289,34 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   actionButtonText: {
-    color: '#FFFFFF',
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: THEME.typography.bodyBold.fontFamily,
+    fontWeight: THEME.typography.bodyBold.fontWeight,
     letterSpacing: 0.2,
   },
   completedBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: `${THEME.colors.success}18`,
     paddingVertical: 14,
-    borderRadius: THEME.radius.md,
+    borderRadius: THEME.radius.full,
     borderWidth: 1,
-    borderColor: `${THEME.colors.success}40`,
     gap: 8,
   },
   completedText: {
-    color: THEME.colors.success,
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: THEME.typography.bodyBold.fontFamily,
+    fontWeight: THEME.typography.bodyBold.fontWeight,
   },
   detailHintRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
+    marginTop: 4,
   },
   detailHintText: {
-    color: THEME.colors.textMuted,
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 13,
+    fontFamily: THEME.typography.body.fontFamily,
   },
 });

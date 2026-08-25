@@ -8,12 +8,14 @@ import {
   RefreshControl,
   ActivityIndicator,
   Dimensions,
-  StatusBar
+  StatusBar,
+  Alert,
+  Platform
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Plus, Cloud, Settings, Flame, Shield, Trophy, Sparkles, CheckCircle2 } from 'lucide-react-native';
-import { THEME } from '../theme/index.js';
-import { getEnrichedHabitsList } from '../database/queries.js';
+import { useAppTheme } from '../theme/index.js';
+import { getEnrichedHabitsList, deleteHabit } from '../database/queries.js';
 import { SwipeableHabitCard, CARD_WIDTH } from '../components/SwipeableHabitCard.jsx';
 import { MilestoneModal } from '../components/MilestoneModal.jsx';
 import { NotionConfigModal } from '../components/NotionConfigModal.jsx';
@@ -31,6 +33,8 @@ export function DashboardScreen({ navigation, route }) {
   // Modals state
   const [notionModalVisible, setNotionModalVisible] = useState(false);
   const [milestoneData, setMilestoneData] = useState(null);
+
+  const { THEME, colors, isDark } = useAppTheme();
 
   const today = getTodayDateString();
 
@@ -84,69 +88,94 @@ export function DashboardScreen({ navigation, route }) {
     navigation.navigate('HabitDetail', { habitId: habit.id });
   };
 
+  const handleCardLongPress = (habit) => {
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm(`Do you want to delete the habit "${habit.title}"?`);
+      if (confirmed) {
+        deleteHabit(habit.id).then(() => {
+          updateHabitWidget();
+          loadData();
+        });
+      }
+      return;
+    }
+
+    Alert.alert(
+      'Delete Habit',
+      `Do you want to delete the habit "${habit.title}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          style: 'destructive',
+          onPress: async () => {
+            await deleteHabit(habit.id);
+            await updateHabitWidget();
+            loadData();
+          }
+        }
+      ]
+    );
+  };
+
   // Quick stats calculations
   const totalHabits = habits.length;
   const completedTodayCount = habits.filter(h => h.isTodayCompleted).length;
   const bestOverallStreak = habits.reduce((max, h) => Math.max(max, h.bestStreak || 0), 0);
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0A0D14" />
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.bg} />
 
       {/* Top Header */}
       <View style={styles.topHeader}>
         <View>
           <View style={styles.logoRow}>
-            <LinearGradient
-              colors={['#FF7A00', '#FF0055']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.logoBadge}
-            >
-              <Flame size={16} color="#FFFFFF" />
-            </LinearGradient>
-            <Text style={styles.headerAppTitle}>SUPER CLIENT</Text>
+            <View style={[styles.logoBadge, { backgroundColor: colors.primary }]}>
+              <Flame size={16} color={isDark ? '#000' : '#FFF'} />
+            </View>
+            <Text style={[styles.headerAppTitle, { color: colors.textPrimary }]}>SUPER CLIENT</Text>
           </View>
-          <Text style={styles.dateSubtitle}>{formatDisplayDate(today, 'full')}</Text>
+          <Text style={[styles.dateSubtitle, { color: colors.textMuted }]}>{formatDisplayDate(today, 'full')}</Text>
         </View>
 
         {/* Header Right Action Icons */}
         <View style={styles.headerIconsRow}>
           <TouchableOpacity
-            style={styles.iconButton}
+            style={[styles.iconButton, { backgroundColor: colors.surface, borderColor: colors.surfaceBorder }]}
             onPress={() => setNotionModalVisible(true)}
           >
-            <Cloud size={20} color={THEME.colors.primary} />
+            <Cloud size={20} color={colors.primary} />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.iconButton}
+            style={[styles.iconButton, { backgroundColor: colors.surface, borderColor: colors.surfaceBorder }]}
             onPress={() => navigation.navigate('Settings')}
           >
-            <Settings size={20} color={THEME.colors.textSecondary} />
+            <Settings size={20} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
       </View>
 
       {/* Overview Quick Stats Bar */}
-      <View style={styles.quickStatsContainer}>
+      <View style={[styles.quickStatsContainer, { backgroundColor: colors.surface }]}>
         <View style={styles.quickStatBox}>
-          <Text style={styles.quickStatLabel}>TIẾN ĐỘ HÔM NAY</Text>
-          <Text style={[styles.quickStatValue, { color: THEME.colors.success }]}>
+          <Text style={[styles.quickStatLabel, { color: colors.textMuted }]}>TODAY'S PROGRESS</Text>
+          <Text style={[styles.quickStatValue, { color: colors.success }]}>
             {completedTodayCount}/{totalHabits}
           </Text>
         </View>
-        <View style={styles.quickStatDivider} />
+        <View style={[styles.quickStatDivider, { backgroundColor: colors.surfaceBorder }]} />
         <View style={styles.quickStatBox}>
-          <Text style={styles.quickStatLabel}>THÓI QUEN ĐANG THEO</Text>
-          <Text style={[styles.quickStatValue, { color: THEME.colors.textPrimary }]}>
+          <Text style={[styles.quickStatLabel, { color: colors.textMuted }]}>ACTIVE HABITS</Text>
+          <Text style={[styles.quickStatValue, { color: colors.textPrimary }]}>
             {totalHabits}
           </Text>
         </View>
-        <View style={styles.quickStatDivider} />
+        <View style={[styles.quickStatDivider, { backgroundColor: colors.surfaceBorder }]} />
         <View style={styles.quickStatBox}>
-          <Text style={styles.quickStatLabel}>KỶ LỤC CAO NHẤT</Text>
-          <Text style={[styles.quickStatValue, { color: THEME.colors.warning }]}>
+          <Text style={[styles.quickStatLabel, { color: colors.textMuted }]}>BEST STREAK</Text>
+          <Text style={[styles.quickStatValue, { color: colors.warning }]}>
             {bestOverallStreak}d
           </Text>
         </View>
@@ -155,35 +184,27 @@ export function DashboardScreen({ navigation, route }) {
       {/* Main Swipeable Habits Cards Carousel */}
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={THEME.colors.primary} />
-          <Text style={styles.loadingText}>Đang nạp dữ liệu kỷ luật...</Text>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading disciplines...</Text>
         </View>
       ) : habits.length === 0 ? (
         <View style={styles.emptyStateContainer}>
-          <LinearGradient
-            colors={['#171F2E', '#0F141F']}
-            style={styles.emptyCard}
-          >
-            <View style={styles.emptyIconCircle}>
-              <Sparkles size={36} color={THEME.colors.primary} />
+          <View style={[styles.emptyCard, { backgroundColor: colors.surface, borderColor: colors.surfaceBorder }]}>
+            <View style={[styles.emptyIconCircle, { backgroundColor: colors.surfaceSubtle, borderColor: colors.surfaceBorder }]}>
+              <Sparkles size={36} color={colors.textPrimary} />
             </View>
-            <Text style={styles.emptyTitle}>Chưa Có Thói Quen Nào</Text>
-            <Text style={styles.emptyDesc}>
-              Bắt đầu hành trình rèn luyện kỷ luật bằng cách tạo thói quen Build (Xây dựng) hoặc Quit (Từ bỏ).
+            <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>No Habits Yet</Text>
+            <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
+              Start your journey of discipline by creating a Build or Quit habit.
             </Text>
             <TouchableOpacity
-              style={styles.emptyAddBtn}
+              style={[styles.emptyAddBtn, { backgroundColor: colors.primary }]}
               onPress={() => navigation.navigate('CreateHabit')}
             >
-              <LinearGradient
-                colors={['#6366F1', '#4F46E5']}
-                style={styles.emptyAddGradient}
-              >
-                <Plus size={18} color="#FFFFFF" />
-                <Text style={styles.emptyAddText}>Tạo Thói Quen Đầu Tiên</Text>
-              </LinearGradient>
+              <Plus size={18} color={isDark ? '#000' : '#FFF'} />
+              <Text style={[styles.emptyAddText, { color: isDark ? '#000' : '#FFF' }]}>Create First Habit</Text>
             </TouchableOpacity>
-          </LinearGradient>
+          </View>
         </View>
       ) : (
         <View style={styles.carouselWrapper}>
@@ -200,13 +221,14 @@ export function DashboardScreen({ navigation, route }) {
                 habit={item}
                 onCheckinPress={handleCheckinPress}
                 onCardPress={handleCardPress}
+                onCardLongPress={handleCardLongPress}
               />
             )}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                tintColor={THEME.colors.primary}
+                tintColor={colors.primary}
               />
             }
           />
@@ -216,17 +238,12 @@ export function DashboardScreen({ navigation, route }) {
       {/* Floating Add Habit Button */}
       {habits.length > 0 && (
         <TouchableOpacity
-          style={styles.fabButton}
+          style={[styles.fabButton, { backgroundColor: colors.textPrimary, shadowColor: colors.textPrimary }]}
           onPress={() => navigation.navigate('CreateHabit')}
           activeOpacity={0.9}
         >
-          <LinearGradient
-            colors={['#6366F1', '#4F46E5']}
-            style={styles.fabGradient}
-          >
-            <Plus size={24} color="#FFFFFF" />
-            <Text style={styles.fabText}>Thêm Thói Quen</Text>
-          </LinearGradient>
+          <Plus size={24} color={colors.bg} />
+          <Text style={[styles.fabText, { color: colors.bg }]}>Add Habit</Text>
         </TouchableOpacity>
       )}
 
@@ -253,15 +270,14 @@ export function DashboardScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: THEME.colors.bg,
   },
   topHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: THEME.spacing.md,
-    paddingTop: 48,
-    paddingBottom: 12,
+    paddingHorizontal: THEME.spacing.lg,
+    paddingTop: 56,
+    paddingBottom: 16,
   },
   logoRow: {
     flexDirection: 'row',
@@ -271,68 +287,66 @@ const styles = StyleSheet.create({
   logoBadge: {
     width: 28,
     height: 28,
-    borderRadius: 8,
+    borderRadius: THEME.radius.sm,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerAppTitle: {
     color: THEME.colors.textPrimary,
-    fontSize: 18,
-    fontWeight: '900',
-    letterSpacing: 0.5,
+    fontSize: 22,
+    fontFamily: THEME.typography.title1.fontFamily,
+    letterSpacing: THEME.typography.title1.letterSpacing,
   },
   dateSubtitle: {
-    color: THEME.colors.textSecondary,
     fontSize: 12,
-    fontWeight: '500',
-    marginTop: 2,
+    fontFamily: THEME.typography.small.fontFamily,
+    textTransform: THEME.typography.small.textTransform,
+    letterSpacing: 0.5,
+    marginTop: 4,
   },
   headerIconsRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 12,
   },
   iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: THEME.colors.surface,
+    width: 44,
+    height: 44,
+    borderRadius: THEME.radius.full,
     borderWidth: 1,
-    borderColor: THEME.colors.surfaceBorder,
     justifyContent: 'center',
     alignItems: 'center',
   },
   quickStatsContainer: {
     flexDirection: 'row',
-    backgroundColor: '#121722',
-    marginHorizontal: THEME.spacing.md,
+    marginHorizontal: THEME.spacing.lg,
     marginVertical: THEME.spacing.sm,
-    paddingVertical: 12,
+    paddingVertical: 16,
     paddingHorizontal: 8,
     borderRadius: THEME.radius.lg,
-    borderWidth: 1,
-    borderColor: THEME.colors.surfaceBorder,
     justifyContent: 'space-around',
     alignItems: 'center',
+    // Removed thick border to reduce borders
+    // Can optionally add a very soft shadow here if preferred
   },
   quickStatBox: {
     alignItems: 'center',
     flex: 1,
   },
   quickStatLabel: {
-    color: THEME.colors.textMuted,
-    fontSize: 9,
-    fontWeight: '800',
+    fontSize: 10,
+    fontFamily: THEME.typography.small.fontFamily,
+    textTransform: THEME.typography.small.textTransform,
     letterSpacing: 0.5,
   },
   quickStatValue: {
-    fontSize: 18,
-    fontWeight: '800',
-    marginTop: 2,
+    fontSize: 20,
+    fontFamily: THEME.typography.title2.fontFamily,
+    color: THEME.colors.textPrimary,
+    marginTop: 4,
   },
   quickStatDivider: {
     width: 1,
-    height: 24,
-    backgroundColor: THEME.colors.surfaceBorder,
+    height: 32,
   },
   carouselWrapper: {
     flex: 1,
@@ -349,8 +363,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   loadingText: {
-    color: THEME.colors.textSecondary,
     fontSize: 14,
+    fontFamily: THEME.typography.body.fontFamily,
   },
   emptyStateContainer: {
     flex: 1,
@@ -360,40 +374,36 @@ const styles = StyleSheet.create({
   },
   emptyCard: {
     width: '100%',
-    borderRadius: THEME.radius.xl,
+    borderRadius: THEME.radius.lg,
     padding: THEME.spacing.xl,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: THEME.colors.surfaceBorder,
   },
   emptyIconCircle: {
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: `${THEME.colors.primary}20`,
+    borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: THEME.spacing.md,
   },
   emptyTitle: {
-    color: THEME.colors.textPrimary,
     fontSize: 20,
-    fontWeight: '800',
-    marginBottom: 6,
+    fontFamily: THEME.typography.title2.fontFamily,
+    marginBottom: 8,
   },
   emptyDesc: {
-    color: THEME.colors.textSecondary,
-    fontSize: 13,
+    fontSize: 14,
+    fontFamily: THEME.typography.body.fontFamily,
+    lineHeight: THEME.typography.body.lineHeight,
     textAlign: 'center',
-    lineHeight: 19,
-    marginBottom: THEME.spacing.lg,
+    marginBottom: THEME.spacing.xl,
   },
   emptyAddBtn: {
-    borderRadius: THEME.radius.md,
+    borderRadius: THEME.radius.full,
     overflow: 'hidden',
     width: '100%',
-  },
-  emptyAddGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -401,32 +411,29 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   emptyAddText: {
-    color: '#FFFFFF',
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: THEME.typography.bodyBold.fontFamily,
+    fontWeight: THEME.typography.bodyBold.fontWeight,
   },
   fabButton: {
     position: 'absolute',
-    bottom: 24,
+    bottom: 32,
     alignSelf: 'center',
     borderRadius: THEME.radius.full,
-    overflow: 'hidden',
-    elevation: 10,
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-  },
-  fabGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 22,
-    paddingVertical: 13,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
     gap: 8,
+    shadowColor: THEME.colors.textPrimary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 4,
   },
   fabText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 15,
+    fontFamily: THEME.typography.bodyBold.fontFamily,
+    fontWeight: THEME.typography.bodyBold.fontWeight,
   },
 });

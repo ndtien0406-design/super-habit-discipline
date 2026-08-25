@@ -9,7 +9,7 @@ import { BuildCheckinScreen } from '../screens/BuildCheckinScreen.jsx';
 import { QuitCheckinScreen } from '../screens/QuitCheckinScreen.jsx';
 import { CreateHabitScreen } from '../screens/CreateHabitScreen.jsx';
 import { SettingsScreen } from '../screens/SettingsScreen.jsx';
-import { THEME } from '../theme/index.js';
+import { useAppTheme } from '../theme/index.js';
 
 const Stack = createNativeStackNavigator();
 
@@ -30,13 +30,15 @@ const linking = {
 };
 
 export function AppNavigator() {
+  const { colors } = useAppTheme();
+
   return (
     <NavigationContainer linking={linking}>
       <Stack.Navigator
         initialRouteName="Dashboard"
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: THEME.colors.bg },
+          contentStyle: { backgroundColor: colors.bg },
           animation: 'slide_from_right',
         }}
       >

@@ -27,6 +27,30 @@ export function getCurrentMonthKey(date = new Date()) {
 }
 
 /**
+ * Parse DD/MM/YYYY to YYYY-MM-DD
+ * @param {string} dateStr 
+ * @returns {string|null}
+ */
+export function parseVietnameseDateToIso(dateStr) {
+  if (!dateStr) return null;
+  const parts = dateStr.split('/');
+  if (parts.length !== 3) return null;
+  const [d, m, y] = parts;
+  return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+}
+
+/**
+ * Format YYYY-MM-DD to DD/MM/YYYY
+ * @param {string} isoStr 
+ * @returns {string}
+ */
+export function formatIsoToVietnameseDate(isoStr) {
+  if (!isoStr) return '';
+  const [y, m, d] = isoStr.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+/**
  * Check if the given last reset month is older than the current month
  * @param {string|null} lastResetMonth - 'YYYY-MM'
  * @returns {boolean}
@@ -86,26 +110,24 @@ export function generateDateRange(startDateStr, endDateStr) {
   return dates;
 }
 
-/**
- * Format a YYYY-MM-DD date to a human readable Vietnamese string
- * @param {string} dateStr - 'YYYY-MM-DD'
- * @param {'full'|'short'|'dayMonth'} [style='full']
- * @returns {string}
- */
 export function formatDisplayDate(dateStr, style = 'full') {
   if (!dateStr) return '';
   const [y, m, d] = dateStr.split('-').map(Number);
   const date = new Date(y, m - 1, d);
   
-  const dayOfWeek = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'][date.getDay()];
+  const dayOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][date.getDay()];
+  const monthName = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][date.getMonth()];
   
+  const dStr = String(d).padStart(2, '0');
+  const mStr = String(m).padStart(2, '0');
+
   if (style === 'dayMonth') {
-    return `${d}/${m}`;
+    return `${dStr}/${mStr}`;
   }
   if (style === 'short') {
-    return `${d} thg ${m}, ${y}`;
+    return `${monthName} ${dStr}, ${y}`;
   }
-  return `${dayOfWeek}, ${d} tháng ${m}, ${y}`;
+  return `${dayOfWeek}, ${monthName} ${dStr}, ${y}`;
 }
 
 /**

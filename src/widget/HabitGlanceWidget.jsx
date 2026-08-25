@@ -1,5 +1,5 @@
 import React from 'react';
-import { FlexWidget, TextWidget } from 'react-native-android-widget';
+import { FlexWidget, TextWidget, ImageWidget } from 'react-native-android-widget';
 
 /**
  * Android Home Screen Widget (Jetpack Glance Grid)
@@ -31,7 +31,7 @@ export function HabitGlanceWidget({ habits = [], lastUpdated = '' }) {
         }}
       >
         <TextWidget
-          text="⚡ KỶ LUẬT CÁ NHÂN"
+          text="⚡ PERSONAL DISCIPLINE"
           style={{
             color: '#F8FAFC',
             fontSize: 13,
@@ -39,7 +39,7 @@ export function HabitGlanceWidget({ habits = [], lastUpdated = '' }) {
           }}
         />
         <TextWidget
-          text={lastUpdated ? `Cập nhật ${lastUpdated}` : 'Super Client'}
+          text={lastUpdated ? `Updated ${lastUpdated}` : 'Super Client'}
           style={{
             color: '#64748B',
             fontSize: 10,
@@ -67,7 +67,7 @@ export function HabitGlanceWidget({ habits = [], lastUpdated = '' }) {
             }}
           >
             <TextWidget
-              text="Chưa có thói quen nào. Mở app để tạo!"
+              text="No habits yet. Open app to create!"
               style={{
                 color: '#94A3B8',
                 fontSize: 12,
@@ -90,6 +90,26 @@ export function HabitGlanceWidget({ habits = [], lastUpdated = '' }) {
                 borderLeftColor: habit.color || '#6366F1',
               }}
             >
+              {habit.latestImage && (
+                <ImageWidget
+                  image={
+                    habit.latestImage.startsWith('http')
+                      ? { uri: habit.latestImage }
+                      : { uri: habit.latestImage } // Local uri should work if accessible
+                  }
+                  style={{
+                    width: 'match_parent',
+                    height: 40,
+                    borderRadius: 6,
+                    marginBottom: 4,
+                  }}
+                  imageStyle={{
+                    width: 'match_parent',
+                    height: 40,
+                  }}
+                  resizeMode="cover"
+                />
+              )}
               <TextWidget
                 text={habit.title}
                 maxLines={1}
@@ -108,7 +128,7 @@ export function HabitGlanceWidget({ habits = [], lastUpdated = '' }) {
                 }}
               >
                 <TextWidget
-                  text={`🔥 ${habit.streak} ngày`}
+                  text={`🔥 ${habit.streak} days`}
                   style={{
                     color: '#F59E0B',
                     fontSize: 11,
@@ -116,7 +136,7 @@ export function HabitGlanceWidget({ habits = [], lastUpdated = '' }) {
                   }}
                 />
                 <TextWidget
-                  text={habit.isCompleted ? '✓ Xong' : 'Chưa'}
+                  text={habit.isCompleted ? '✓ Done' : 'Pending'}
                   style={{
                     color: habit.isCompleted ? '#10B981' : '#64748B',
                     fontSize: 10,

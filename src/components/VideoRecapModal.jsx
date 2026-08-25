@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Film, Play, Pause, Download, X, CheckCircle2, Sparkles } from 'lucide-react-native';
-import { THEME } from '../theme/index.js';
+import { Play, Pause, Download, X, Film, Sparkles } from 'lucide-react-native';
+import { useAppTheme } from '../theme/index.js';
 import { calculateOptimalFps, renderHabitRecapVideo } from '../services/videoRenderService.js';
 
 export function VideoRecapModal({ visible, habit, images = [], onClose }) {
+  const { THEME, colors, isDark } = useAppTheme();
+  
   const [isPlaying, setIsPlaying] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
@@ -29,12 +31,12 @@ export function VideoRecapModal({ visible, habit, images = [], onClose }) {
 
   const handleExport = async () => {
     if (totalImages === 0) {
-      Alert.alert('Chưa có ảnh', 'Cần ít nhất 1 ảnh để kết xuất video recap.');
+      Alert.alert('No Photos', 'At least 1 photo is required to render a recap video.');
       return;
     }
 
     setIsExporting(true);
-    setExportProgress({ text: 'Đang khởi động render...', percent: 10 });
+    setExportProgress({ text: 'Starting render...', percent: 10 });
 
     try {
       const result = await renderHabitRecapVideo(habit.id, habit.title, {
@@ -43,14 +45,14 @@ export function VideoRecapModal({ visible, habit, images = [], onClose }) {
 
       if (result.success) {
         Alert.alert(
-          '🎉 Xuất Video Thành Công!',
-          `${result.message}\nVideo đã được lưu vào Thư viện ảnh (Gallery) của máy, sẵn sàng đăng tải lên YouTube Shorts / TikTok.`
+          '🎉 Export Successful!',
+          `${result.message}\nVideo has been saved to your device Gallery, ready for YouTube Shorts / TikTok.`
         );
       } else {
-        Alert.alert('Không thể xuất video', result.message);
+        Alert.alert('Cannot export video', result.message);
       }
     } catch (err) {
-      Alert.alert('Lỗi', err.message);
+      Alert.alert('Error', err.message);
     } finally {
       setIsExporting(false);
     }
@@ -62,25 +64,22 @@ export function VideoRecapModal({ visible, habit, images = [], onClose }) {
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={styles.container}>
-          <LinearGradient
-            colors={['#171F2E', '#0A0D14']}
-            style={styles.gradientCard}
-          >
+      <View style={[styles.overlay, { backgroundColor: isDark ? 'rgba(26, 14, 2, 0.9)' : 'rgba(255, 247, 233, 0.9)' }]}>
+        <View style={[styles.container, { backgroundColor: colors.surface }]}>
+          <View style={styles.gradientCard}>
             {/* Top Bar */}
             <View style={styles.topBar}>
               <View style={styles.titleRow}>
-                <Film size={18} color={THEME.colors.primary} />
-                <Text style={styles.headerTitle}>Timelapse Video Recap</Text>
+                <Film size={18} color={colors.primary} />
+                <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Timelapse Video Recap</Text>
               </View>
-              <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-                <X size={20} color={THEME.colors.textSecondary} />
+              <TouchableOpacity onPress={onClose} style={[styles.closeBtn, { backgroundColor: colors.surfaceSubtle }]}>
+                <X size={20} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
             {/* Video Player Preview Box */}
-            <View style={styles.playerContainer}>
+            <View style={[styles.playerContainer, { backgroundColor: colors.surfaceSubtle, borderColor: colors.surfaceBorder }]}>
               {totalImages > 0 && currentImage ? (
                 <>
                   <Image
@@ -89,41 +88,41 @@ export function VideoRecapModal({ visible, habit, images = [], onClose }) {
                     resizeMode="cover"
                   />
                   {/* Overlay Frame Badge */}
-                  <View style={styles.frameBadge}>
-                    <Text style={styles.frameBadgeText}>
-                      Ngày {currentImage.day_number || currentIndex + 1} ({currentIndex + 1}/{totalImages})
+                  <View style={[styles.frameBadge, { backgroundColor: isDark ? 'rgba(26,14,2,0.8)' : 'rgba(255,255,255,0.8)', borderColor: colors.surfaceBorder }]}>
+                    <Text style={[styles.frameBadgeText, { color: colors.textPrimary }]}>
+                      Day {currentImage.day_number || currentIndex + 1} ({currentIndex + 1}/{totalImages})
                     </Text>
                   </View>
                 </>
               ) : (
                 <View style={styles.emptyContainer}>
-                  <Film size={40} color={THEME.colors.textMuted} />
-                  <Text style={styles.emptyText}>Chưa có ảnh điểm danh nào.</Text>
+                  <Film size={40} color={colors.textMuted} />
+                  <Text style={[styles.emptyText, { color: colors.textMuted }]}>No check-in photos yet.</Text>
                 </View>
               )}
             </View>
 
             {/* Specs Row */}
             <View style={styles.specsRow}>
-              <View style={styles.specBox}>
-                <Text style={styles.specLabel}>TỔNG ẢNH</Text>
-                <Text style={styles.specVal}>{totalImages}</Text>
+              <View style={[styles.specBox, { backgroundColor: colors.surfaceSubtle, borderColor: colors.surfaceBorder }]}>
+                <Text style={[styles.specLabel, { color: colors.textMuted }]}>TOTAL PHOTOS</Text>
+                <Text style={[styles.specVal, { color: colors.textPrimary }]}>{totalImages}</Text>
               </View>
-              <View style={styles.specBox}>
-                <Text style={styles.specLabel}>TỐC ĐỘ FPS</Text>
-                <Text style={styles.specVal}>{fps} fps</Text>
+              <View style={[styles.specBox, { backgroundColor: colors.surfaceSubtle, borderColor: colors.surfaceBorder }]}>
+                <Text style={[styles.specLabel, { color: colors.textMuted }]}>FPS RATE</Text>
+                <Text style={[styles.specVal, { color: colors.textPrimary }]}>{fps} fps</Text>
               </View>
-              <View style={styles.specBox}>
-                <Text style={styles.specLabel}>THỜI LƯỢNG</Text>
-                <Text style={styles.specVal}>{duration}s</Text>
+              <View style={[styles.specBox, { backgroundColor: colors.surfaceSubtle, borderColor: colors.surfaceBorder }]}>
+                <Text style={[styles.specLabel, { color: colors.textMuted }]}>DURATION</Text>
+                <Text style={[styles.specVal, { color: colors.textPrimary }]}>{duration}s</Text>
               </View>
             </View>
 
             {/* Export Progress indicator */}
             {isExporting && (
               <View style={styles.progressBox}>
-                <ActivityIndicator size="small" color={THEME.colors.primary} />
-                <Text style={styles.progressText}>{exportProgress.text}</Text>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text style={[styles.progressText, { color: colors.primary }]}>{exportProgress.text}</Text>
               </View>
             )}
 
@@ -131,16 +130,16 @@ export function VideoRecapModal({ visible, habit, images = [], onClose }) {
             <View style={styles.actionButtonsRow}>
               {/* Play / Pause Preview */}
               <TouchableOpacity
-                style={styles.playPauseBtn}
+                style={[styles.playPauseBtn, { backgroundColor: colors.surfaceSubtle }]}
                 onPress={() => setIsPlaying(!isPlaying)}
                 disabled={totalImages === 0}
               >
                 {isPlaying ? (
-                  <Pause size={18} color="#FFFFFF" />
+                  <Pause size={18} color={colors.textPrimary} />
                 ) : (
-                  <Play size={18} color="#FFFFFF" />
+                  <Play size={18} color={colors.textPrimary} />
                 )}
-                <Text style={styles.playPauseText}>{isPlaying ? 'Tạm dừng' : 'Xem trước'}</Text>
+                <Text style={[styles.playPauseText, { color: colors.textPrimary }]}>{isPlaying ? 'Pause' : 'Preview'}</Text>
               </TouchableOpacity>
 
               {/* Export MP4 button */}
@@ -150,17 +149,19 @@ export function VideoRecapModal({ visible, habit, images = [], onClose }) {
                 disabled={isExporting || totalImages === 0}
               >
                 <LinearGradient
-                  colors={['#6366F1', '#4F46E5']}
+                  colors={[colors.primary, colors.warning]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
                   style={styles.exportGradient}
                 >
-                  <Download size={18} color="#FFFFFF" />
-                  <Text style={styles.exportText}>
-                    {isExporting ? 'Đang xuất MP4...' : 'Xuất Video Gallery'}
+                  <Download size={18} color={isDark ? '#000' : '#FFF'} />
+                  <Text style={[styles.exportText, { color: isDark ? '#000' : '#FFF' }]}>
+                    {isExporting ? 'Exporting MP4...' : 'Export Video to Gallery'}
                   </Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
-          </LinearGradient>
+          </View>
         </View>
       </View>
     </Modal>
@@ -170,7 +171,6 @@ export function VideoRecapModal({ visible, habit, images = [], onClose }) {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(5, 8, 14, 0.9)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: THEME.spacing.md,
@@ -180,8 +180,10 @@ const styles = StyleSheet.create({
     maxWidth: 400,
     borderRadius: THEME.radius.xl,
     overflow: 'hidden',
-    borderWidth: 1.5,
-    borderColor: THEME.colors.surfaceBorder,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
     elevation: 20,
   },
   gradientCard: {
@@ -199,21 +201,19 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   headerTitle: {
-    color: THEME.colors.textPrimary,
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: THEME.typography.title2.fontFamily,
   },
   closeBtn: {
-    padding: 4,
+    padding: 6,
+    borderRadius: THEME.radius.full,
   },
   playerContainer: {
     width: '100%',
     height: 320,
-    backgroundColor: '#0F141F',
     borderRadius: THEME.radius.lg,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: THEME.colors.surfaceBorder,
     position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
@@ -226,25 +226,22 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 12,
     left: 12,
-    backgroundColor: 'rgba(10, 13, 20, 0.8)',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: THEME.radius.full,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   frameBadgeText: {
-    color: '#FFFFFF',
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: THEME.typography.small.fontFamily,
   },
   emptyContainer: {
     alignItems: 'center',
     gap: 8,
   },
   emptyText: {
-    color: THEME.colors.textMuted,
     fontSize: 13,
+    fontFamily: THEME.typography.body.fontFamily,
   },
   specsRow: {
     flexDirection: 'row',
@@ -253,23 +250,19 @@ const styles = StyleSheet.create({
   },
   specBox: {
     flex: 1,
-    backgroundColor: '#0F141F',
     padding: 10,
     borderRadius: THEME.radius.md,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: THEME.colors.surfaceBorder,
   },
   specLabel: {
-    color: THEME.colors.textMuted,
     fontSize: 9,
-    fontWeight: '700',
+    fontFamily: THEME.typography.small.fontFamily,
     letterSpacing: 0.5,
   },
   specVal: {
-    color: THEME.colors.textPrimary,
     fontSize: 15,
-    fontWeight: '800',
+    fontFamily: THEME.typography.bodyBold.fontFamily,
     marginTop: 2,
   },
   progressBox: {
@@ -280,9 +273,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   progressText: {
-    color: THEME.colors.primary,
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: THEME.typography.bodyBold.fontFamily,
   },
   actionButtonsRow: {
     flexDirection: 'row',
@@ -293,16 +285,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#1E293B',
     paddingHorizontal: 16,
     paddingVertical: 13,
     borderRadius: THEME.radius.md,
     gap: 6,
   },
   playPauseText: {
-    color: '#FFFFFF',
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: THEME.typography.bodyBold.fontFamily,
   },
   exportBtn: {
     flex: 1,
@@ -317,8 +307,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   exportText: {
-    color: '#FFFFFF',
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: THEME.typography.bodyBold.fontFamily,
   },
 });

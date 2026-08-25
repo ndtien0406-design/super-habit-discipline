@@ -4,7 +4,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as FileSystem from 'expo-file-system';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Camera, FlipHorizontal, ArrowLeft, Check, Sparkles, AlertCircle, ImagePlus } from 'lucide-react-native';
-import { THEME } from '../theme/index.js';
+import { useAppTheme } from '../theme/index.js';
 import { getTodayDateString, formatDisplayDate } from '../utils/dateHelper.js';
 import { insertOrUpdateCheckin } from '../database/queries.js';
 import { updateHabitWidget } from '../services/widgetService.js';
@@ -16,6 +16,8 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SAMPLE_PHOTO = 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=800&auto=format&fit=crop&q=80';
 
 export function BuildCheckinScreen({ route, navigation }) {
+  const { THEME, colors, isDark } = useAppTheme();
+  
   const { habit } = route.params;
   const isWeb = Platform.OS === 'web';
   const [permission, requestPermission] = isWeb ? [{ granted: true }, () => {}] : useCameraPermissions();
@@ -27,7 +29,7 @@ export function BuildCheckinScreen({ route, navigation }) {
 
   const today = getTodayDateString();
   const nextDayNumber = (habit.currentStreak || 0) + 1;
-  const habitColor = habit.color_code || THEME.colors.primary;
+  const habitColor = habit.color_code || colors.primary;
 
   const handleTakePhoto = async () => {
     if (isWeb) {
@@ -44,7 +46,7 @@ export function BuildCheckinScreen({ route, navigation }) {
         });
         setPhotoUri(photo.uri);
       } catch (e) {
-        Alert.alert('Lỗi chụp ảnh', e.message);
+        Alert.alert('Photo Capture Error', e.message);
       }
     }
   };
@@ -55,7 +57,7 @@ export function BuildCheckinScreen({ route, navigation }) {
 
   const handleSaveCheckin = async () => {
     if (!photoUri) {
-      Alert.alert('Chưa có ảnh', 'Vui lòng chụp một bức ảnh làm bằng chứng kỷ luật.');
+      Alert.alert('No Photo', 'Please take a photo as proof of your habit.');
       return;
     }
 
@@ -95,46 +97,46 @@ export function BuildCheckinScreen({ route, navigation }) {
       });
     } catch (error) {
       setIsSaving(false);
-      Alert.alert('Lỗi lưu điểm danh', error.message);
+      Alert.alert('Check-in Error', error.message);
     }
   };
 
   if (!isWeb && !permission) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={THEME.colors.primary} />
+      <View style={[styles.centerContainer, { backgroundColor: colors.bg }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   if (!isWeb && !permission.granted) {
     return (
-      <View style={styles.permissionContainer}>
-        <AlertCircle size={48} color={THEME.colors.warning} />
-        <Text style={styles.permissionTitle}>Cần quyền truy cập Camera</Text>
-        <Text style={styles.permissionDesc}>
-          Ứng dụng cần sử dụng Camera để chụp ảnh bằng chứng kỷ luật và đóng dấu watermark số ngày.
+      <View style={[styles.permissionContainer, { backgroundColor: colors.bg }]}>
+        <AlertCircle size={48} color={colors.warning} />
+        <Text style={[styles.permissionTitle, { color: colors.textPrimary }]}>Camera Permission Required</Text>
+        <Text style={[styles.permissionDesc, { color: colors.textSecondary }]}>
+          The app needs camera access to take proof photos and apply the streak watermark.
         </Text>
-        <TouchableOpacity style={styles.permissionBtn} onPress={requestPermission}>
-          <Text style={styles.permissionBtnText}>Cấp Quyền Camera</Text>
+        <TouchableOpacity style={[styles.permissionBtn, { backgroundColor: colors.primary }]} onPress={requestPermission}>
+          <Text style={styles.permissionBtnText}>Grant Camera Access</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.backLink} onPress={() => navigation.goBack()}>
-          <Text style={styles.backLinkText}>Quay lại</Text>
+          <Text style={[styles.backLinkText, { color: colors.textMuted }]}>Go Back</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
       {/* Top Header */}
-      <View style={styles.topHeader}>
+      <View style={[styles.topHeader, { backgroundColor: colors.bg, borderBottomColor: colors.surfaceBorder }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
-          <ArrowLeft size={22} color="#FFFFFF" />
+          <ArrowLeft size={22} color={colors.textPrimary} />
         </TouchableOpacity>
         <View style={styles.headerInfo}>
-          <Text style={styles.headerHabitTitle} numberOfLines={1}>{habit.title}</Text>
-          <Text style={styles.headerDayText}>Điểm danh Ngày {nextDayNumber} (Build)</Text>
+          <Text style={[styles.headerHabitTitle, { color: colors.textPrimary }]} numberOfLines={1}>{habit.title}</Text>
+          <Text style={[styles.headerDayText, { color: colors.textSecondary }]}>Check-in Day {nextDayNumber} (Build)</Text>
         </View>
         <View style={{ width: 40 }} />
       </View>
@@ -143,15 +145,15 @@ export function BuildCheckinScreen({ route, navigation }) {
       <View style={styles.previewArea}>
         {!photoUri ? (
           isWeb ? (
-            <View style={styles.webCameraMock}>
+            <View style={[styles.webCameraMock, { backgroundColor: colors.surfaceSubtle }]}>
               <Camera size={56} color={habitColor} />
-              <Text style={styles.webMockTitle}>Trình Giả Lập Camera Web</Text>
-              <Text style={styles.webMockDesc}>
-                Bấm nút chụp bên dưới để chụp ảnh mẫu và xem thử hiệu ứng Watermark số ngày streak!
+              <Text style={[styles.webMockTitle, { color: colors.textPrimary }]}>Web Camera Simulator</Text>
+              <Text style={[styles.webMockDesc, { color: colors.textSecondary }]}>
+                Click the capture button below to take a sample photo and preview the streak watermark effect!
               </Text>
               <TouchableOpacity style={[styles.webCaptureBtn, { backgroundColor: habitColor }]} onPress={handleTakePhoto}>
                 <Camera size={20} color="#FFFFFF" />
-                <Text style={styles.webCaptureBtnText}>Chụp Ảnh Bằng Chứng</Text>
+                <Text style={styles.webCaptureBtnText}>Capture Proof</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -159,7 +161,7 @@ export function BuildCheckinScreen({ route, navigation }) {
               <View style={styles.cameraOverlay}>
                 <View style={styles.cameraHeaderNotice}>
                   <Text style={styles.cameraNoticeText}>
-                    📸 Chụp ảnh kỷ luật hôm nay ({formatDisplayDate(today, 'short')})
+                    📸 Today's Proof Photo ({formatDisplayDate(today, 'short')})
                   </Text>
                 </View>
 
@@ -192,12 +194,12 @@ export function BuildCheckinScreen({ route, navigation }) {
               <View style={styles.watermarkTopBadge}>
                 <Sparkles size={14} color="#F59E0B" />
                 <Text style={styles.watermarkDayHighlight}>
-                  NGÀY {nextDayNumber}
+                  DAY {nextDayNumber}
                 </Text>
               </View>
               <Text style={styles.watermarkHabitName}>{habit.title}</Text>
               <Text style={styles.watermarkDateText}>
-                {formatDisplayDate(today, 'full')} • Super Client Kỷ Luật
+                {formatDisplayDate(today, 'full')} • Super Discipline Client
               </Text>
             </LinearGradient>
           </View>
@@ -206,11 +208,11 @@ export function BuildCheckinScreen({ route, navigation }) {
 
       {/* Bottom Panel: Note & Action Buttons */}
       {photoUri && (
-        <View style={styles.bottomPanel}>
+        <View style={[styles.bottomPanel, { backgroundColor: colors.surface, borderTopColor: colors.surfaceBorder }]}>
           <TextInput
-            style={styles.noteInput}
-            placeholder="Thêm ghi chú/cảm xúc ngày hôm nay (tùy chọn)..."
-            placeholderTextColor={THEME.colors.textMuted}
+            style={[styles.noteInput, { backgroundColor: colors.surfaceSubtle, borderColor: colors.surfaceBorder, color: colors.textPrimary }]}
+            placeholder="Add note/feeling for today (optional)..."
+            placeholderTextColor={colors.textMuted}
             value={note}
             onChangeText={setNote}
             multiline
@@ -219,11 +221,11 @@ export function BuildCheckinScreen({ route, navigation }) {
 
           <View style={styles.actionButtonsRow}>
             <TouchableOpacity
-              style={styles.retakeButton}
+              style={[styles.retakeButton, { backgroundColor: colors.surfaceSubtle }]}
               onPress={handleRetake}
               disabled={isSaving}
             >
-              <Text style={styles.retakeText}>Chụp Lại</Text>
+              <Text style={[styles.retakeText, { color: colors.textSecondary }]}>Retake</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -240,7 +242,7 @@ export function BuildCheckinScreen({ route, navigation }) {
                 ) : (
                   <>
                     <Check size={18} color="#FFFFFF" />
-                    <Text style={styles.saveButtonText}>Lưu & Hoàn Thành</Text>
+                    <Text style={styles.saveButtonText}>Save & Complete</Text>
                   </>
                 )}
               </LinearGradient>
@@ -255,11 +257,9 @@ export function BuildCheckinScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: THEME.colors.bg,
   },
   centerContainer: {
     flex: 1,
-    backgroundColor: THEME.colors.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -270,9 +270,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: THEME.spacing.md,
     paddingTop: 48,
     paddingBottom: 12,
-    backgroundColor: '#0F141F',
     borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.surfaceBorder,
   },
   iconBtn: {
     padding: 8,
@@ -282,14 +280,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerHabitTitle: {
-    color: THEME.colors.textPrimary,
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: THEME.typography.title2.fontFamily,
   },
   headerDayText: {
-    color: THEME.colors.textSecondary,
     fontSize: 12,
-    fontWeight: '500',
+    fontFamily: THEME.typography.small.fontFamily,
   },
   previewArea: {
     flex: 1,
@@ -316,7 +312,7 @@ const styles = StyleSheet.create({
   cameraNoticeText: {
     color: '#FFFFFF',
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: THEME.typography.bodyBold.fontFamily,
   },
   cameraControlsRow: {
     flexDirection: 'row',
@@ -380,35 +376,31 @@ const styles = StyleSheet.create({
   watermarkDayHighlight: {
     color: '#F59E0B',
     fontSize: 14,
-    fontWeight: '900',
+    fontFamily: THEME.typography.title2.fontFamily,
     letterSpacing: 1,
   },
   watermarkHabitName: {
     color: '#FFFFFF',
     fontSize: 20,
-    fontWeight: '800',
+    fontFamily: THEME.typography.title2.fontFamily,
     marginBottom: 4,
   },
   watermarkDateText: {
     color: '#94A3B8',
     fontSize: 12,
-    fontWeight: '500',
+    fontFamily: THEME.typography.body.fontFamily,
   },
   bottomPanel: {
-    backgroundColor: '#0F141F',
     padding: THEME.spacing.md,
     borderTopWidth: 1,
-    borderTopColor: THEME.colors.surfaceBorder,
   },
   noteInput: {
-    backgroundColor: '#141A26',
     borderRadius: THEME.radius.md,
     borderWidth: 1,
-    borderColor: THEME.colors.surfaceBorder,
-    color: THEME.colors.textPrimary,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 13,
+    fontFamily: THEME.typography.body.fontFamily,
     maxHeight: 70,
     marginBottom: 12,
   },
@@ -417,7 +409,6 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   retakeButton: {
-    backgroundColor: '#1E293B',
     paddingHorizontal: 18,
     paddingVertical: 14,
     borderRadius: THEME.radius.md,
@@ -425,9 +416,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   retakeText: {
-    color: THEME.colors.textSecondary,
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: THEME.typography.bodyBold.fontFamily,
   },
   saveButton: {
     flex: 1,
@@ -444,31 +434,28 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: '#FFFFFF',
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: THEME.typography.bodyBold.fontFamily,
   },
   permissionContainer: {
     flex: 1,
-    backgroundColor: THEME.colors.bg,
     justifyContent: 'center',
     alignItems: 'center',
     padding: THEME.spacing.xl,
   },
   permissionTitle: {
-    color: THEME.colors.textPrimary,
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: THEME.typography.title2.fontFamily,
     marginTop: 16,
     marginBottom: 8,
   },
   permissionDesc: {
-    color: THEME.colors.textSecondary,
     fontSize: 14,
+    fontFamily: THEME.typography.body.fontFamily,
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 24,
   },
   permissionBtn: {
-    backgroundColor: THEME.colors.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: THEME.radius.md,
@@ -476,33 +463,31 @@ const styles = StyleSheet.create({
   permissionBtnText: {
     color: '#FFFFFF',
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: THEME.typography.bodyBold.fontFamily,
   },
   backLink: {
     marginTop: 16,
     padding: 8,
   },
   backLinkText: {
-    color: THEME.colors.textMuted,
     fontSize: 13,
+    fontFamily: THEME.typography.body.fontFamily,
   },
   webCameraMock: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 32,
-    backgroundColor: '#0F1420',
   },
   webMockTitle: {
-    color: '#F8FAFC',
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: THEME.typography.title2.fontFamily,
     marginTop: 16,
     marginBottom: 8,
   },
   webMockDesc: {
-    color: '#94A3B8',
     fontSize: 13,
+    fontFamily: THEME.typography.body.fontFamily,
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 24,
@@ -519,6 +504,6 @@ const styles = StyleSheet.create({
   webCaptureBtnText: {
     color: '#FFFFFF',
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: THEME.typography.bodyBold.fontFamily,
   },
 });

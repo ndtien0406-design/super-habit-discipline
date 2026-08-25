@@ -1,5 +1,7 @@
+import React from 'react';
 import { Platform } from 'react-native';
 import { getEnrichedHabitsList } from '../database/queries.js';
+import { HabitGlanceWidget } from '../widget/HabitGlanceWidget.jsx';
 
 export const WIDGET_NAME = 'HabitGlanceWidget';
 
@@ -23,15 +25,18 @@ export async function updateHabitWidget() {
       color: h.color_code,
       streak: h.currentStreak,
       isCompleted: h.isTodayCompleted,
+      latestImage: h.latestImage,
       deepLink: `superhabit://habit/${h.id}`
     }));
 
+    const lastUpdated = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    
     await requestWidgetUpdate({
       widgetName: WIDGET_NAME,
-      renderWidget: () => null,
+      renderWidget: () => <HabitGlanceWidget habits={widgetData} lastUpdated={lastUpdated} />,
       widgetInfo: {
         habits: widgetData,
-        lastUpdated: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+        lastUpdated
       }
     });
 

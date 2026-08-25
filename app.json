@@ -41,14 +41,14 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Cho phép ứng dụng truy cập Camera để chụp ảnh bằng chứng kỷ luật mỗi ngày."
+          "cameraPermission": "Allow the app to access the Camera to capture discipline proof every day."
         }
       ],
       [
         "expo-media-library",
         {
-          "photosPermission": "Cho phép ứng dụng lưu ảnh và video recap kỷ luật vào thư viện máy.",
-          "savePhotosPermission": "Cho phép ứng dụng lưu ảnh và video recap kỷ luật vào thư viện máy."
+          "photosPermission": "Allow the app to save discipline recap photos and videos to the library.",
+          "savePhotosPermission": "Allow the app to save discipline recap photos and videos to the library."
         }
       ],
       [
@@ -65,12 +65,12 @@
           "widgets": [
             {
               "name": "HabitGlanceWidget",
-              "label": "Kỷ Luật Cá Nhân (Glance)",
+              "label": "Personal Discipline (Glance)",
               "minWidth": "160dp",
               "minHeight": "100dp",
               "targetCellWidth": 3,
               "targetCellHeight": 2,
-              "description": "Lưới theo dõi tiến độ đa thói quen kỷ luật",
+              "description": "Multi-habit discipline progress tracking grid",
               "previewImage": "./assets/adaptive-icon.png",
               "updatePeriodMillis": 1800000
             }

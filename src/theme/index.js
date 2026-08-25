@@ -1,52 +1,101 @@
-export const THEME = {
-  colors: {
-    bg: '#0A0D14',
-    bgLight: '#0F141E',
-    surface: '#141A26',
-    surfaceSubtle: '#1A2234',
-    surfaceBorder: '#232E44',
-    surfaceBorderActive: '#3B82F6',
-    
-    textPrimary: '#F8FAFC',
-    textSecondary: '#94A3B8',
-    textMuted: '#64748B',
-    
-    // Status colors
-    primary: '#6366F1',
-    primaryGlow: 'rgba(99, 102, 241, 0.3)',
-    
-    success: '#10B981',
-    successGlow: 'rgba(16, 185, 129, 0.25)',
-    
-    warning: '#F59E0B',
-    warningGlow: 'rgba(245, 158, 11, 0.25)',
-    
-    danger: '#EF4444',
-    dangerGlow: 'rgba(239, 68, 68, 0.25)',
-    
-    freeze: '#06B6D4',
-    freezeGlow: 'rgba(6, 182, 212, 0.3)',
-    
-    milestone: '#A855F7',
-    milestoneGlow: 'rgba(168, 85, 247, 0.3)',
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useColorScheme } from 'react-native';
 
-    // Gradients
-    cardGradient: ['#171F2E', '#101520'],
-    cardGlowBuild: ['#10B98120', '#10B98105'],
-    cardGlowQuit: ['#F59E0B20', '#F59E0B05'],
-    streakFlame: ['#FF7A00', '#FF0055'],
-    freezeGradient: ['#06B6D4', '#3B82F6'],
-  },
+const lightColors = {
+  // Backgrounds
+  bg: '#FFF7E9',         // Daylight beige
+  bgLight: '#FFFFFF',    // White for layers
+  surface: '#FFFFFF',
+  surfaceSubtle: 'rgba(76, 40, 6, 0.03)',
+  surfaceBorder: 'rgba(76, 40, 6, 0.15)', // Reduced border opacity
+  surfaceBorderActive: 'rgba(76, 40, 6, 0.35)',
+  
+  // Text
+  textPrimary: '#4C2806', // Daylight dark brown
+  textSecondary: 'rgba(76, 40, 6, 0.75)',
+  textMuted: 'rgba(76, 40, 6, 0.45)',
+  
+  // Status/Accent colors
+  primary: '#F66F00', // Daylight orange
+  primaryGlow: 'rgba(246, 111, 0, 0.2)',
+  
+  success: '#34A853',
+  successGlow: 'rgba(52, 168, 83, 0.2)',
+  
+  warning: '#FCCC3C', // Daylight yellow
+  warningGlow: 'rgba(252, 204, 60, 0.25)',
+  
+  danger: '#D32F2F', 
+  dangerGlow: 'rgba(211, 47, 47, 0.25)',
+  
+  freeze: '#4DA2FF', 
+  freezeGlow: 'rgba(77, 162, 255, 0.3)',
+  
+  milestone: '#FCCC3C',
+  milestoneGlow: 'rgba(252, 204, 60, 0.3)',
+
+  // Gradients
+  cardGradient: ['#FFFFFF', '#FFFFFF'],
+  cardGlowBuild: ['rgba(246, 111, 0, 0.1)', 'rgba(246, 111, 0, 0)'],
+  cardGlowQuit: ['rgba(252, 204, 60, 0.1)', 'rgba(252, 204, 60, 0)'],
+  streakFlame: ['#FCCC3C', '#F66F00'],
+  freezeGradient: ['#4DA2FF', '#4DA2FF'],
+};
+
+const darkColors = {
+  // Backgrounds
+  bg: '#1A0E02',         // Very dark brown
+  bgLight: '#2A1604',    
+  surface: '#2A1604',
+  surfaceSubtle: 'rgba(255, 247, 233, 0.05)',
+  surfaceBorder: 'rgba(255, 247, 233, 0.15)',
+  surfaceBorderActive: 'rgba(255, 247, 233, 0.35)',
+  
+  // Text
+  textPrimary: '#FFF7E9', // Daylight beige
+  textSecondary: 'rgba(255, 247, 233, 0.75)',
+  textMuted: 'rgba(255, 247, 233, 0.45)',
+  
+  // Status/Accent colors
+  primary: '#F66F00', 
+  primaryGlow: 'rgba(246, 111, 0, 0.3)',
+  
+  success: '#34A853',
+  successGlow: 'rgba(52, 168, 83, 0.3)',
+  
+  warning: '#FCCC3C', 
+  warningGlow: 'rgba(252, 204, 60, 0.3)',
+  
+  danger: '#EF5350', 
+  dangerGlow: 'rgba(239, 83, 80, 0.3)',
+  
+  freeze: '#64B5F6', 
+  freezeGlow: 'rgba(100, 181, 246, 0.3)',
+  
+  milestone: '#FCCC3C',
+  milestoneGlow: 'rgba(252, 204, 60, 0.4)',
+
+  // Gradients
+  cardGradient: ['#2A1604', '#2A1604'],
+  cardGlowBuild: ['rgba(246, 111, 0, 0.15)', 'rgba(246, 111, 0, 0)'],
+  cardGlowQuit: ['rgba(252, 204, 60, 0.15)', 'rgba(252, 204, 60, 0)'],
+  streakFlame: ['#FCCC3C', '#F66F00'],
+  freezeGradient: ['#64B5F6', '#64B5F6'],
+};
+
+export const THEME = {
+  // `colors` will be injected dynamically, this is just a fallback structure
+  colors: lightColors, 
 
   habitColorPresets: [
-    { name: 'Indigo Fire', hex: '#6366F1' },
-    { name: 'Emerald Focus', hex: '#10B981' },
-    { name: 'Amber Grit', hex: '#F59E0B' },
-    { name: 'Crimson Will', hex: '#EF4444' },
-    { name: 'Cyber Purple', hex: '#8B5CF6' },
-    { name: 'Glacier Cyan', hex: '#06B6D4' },
-    { name: 'Neon Rose', hex: '#EC4899' },
-    { name: 'Teal Discipline', hex: '#14B8A6' },
+    { name: 'Orange', hex: '#F66F00' },
+    { name: 'Yellow', hex: '#FCCC3C' },
+    { name: 'Forest', hex: '#34A853' },
+    { name: 'Sky', hex: '#4DA2FF' },
+    { name: 'Brown', hex: '#4C2806' },
+    { name: 'Red', hex: '#D32F2F' },
+    { name: 'Teal', hex: '#008080' },
+    { name: 'Slate', hex: '#708090' },
   ],
 
   spacing: {
@@ -59,21 +108,49 @@ export const THEME = {
   },
 
   radius: {
-    sm: 8,
-    md: 14,
-    lg: 20,
-    xl: 28,
+    sm: 6,
+    md: 12,
+    lg: 16,
+    xl: 24,
     full: 9999,
   },
 
   typography: {
-    hero: { fontSize: 36, fontWeight: '800', letterSpacing: -1 },
-    title1: { fontSize: 24, fontWeight: '700', letterSpacing: -0.5 },
-    title2: { fontSize: 20, fontWeight: '700', letterSpacing: -0.3 },
-    title3: { fontSize: 17, fontWeight: '600' },
-    body: { fontSize: 15, fontWeight: '400', lineHeight: 22 },
-    bodyBold: { fontSize: 15, fontWeight: '600' },
-    caption: { fontSize: 13, fontWeight: '500', color: '#94A3B8' },
-    small: { fontSize: 11, fontWeight: '600', letterSpacing: 0.5 },
+    hero: { fontSize: 36, fontFamily: 'Georgia', letterSpacing: -1 },
+    title1: { fontSize: 24, fontFamily: 'Georgia', letterSpacing: -0.5 },
+    title2: { fontSize: 20, fontFamily: 'Georgia', letterSpacing: -0.3 },
+    title3: { fontSize: 17, fontFamily: 'Helvetica', fontWeight: 'bold' },
+    body: { fontSize: 15, fontFamily: 'Helvetica', lineHeight: 22 },
+    bodyBold: { fontSize: 15, fontFamily: 'Helvetica', fontWeight: 'bold' },
+    caption: { fontSize: 13, fontFamily: 'Helvetica' },
+    small: { fontSize: 11, fontFamily: 'Courier', letterSpacing: 0.5, textTransform: 'uppercase', fontWeight: '600' },
   }
 };
+
+const ThemeContext = createContext({
+  isDark: false,
+  colors: lightColors,
+  THEME: THEME,
+});
+
+export const ThemeProvider = ({ children }) => {
+  const systemColorScheme = useColorScheme();
+  const isDark = systemColorScheme === 'dark';
+
+  const currentColors = isDark ? darkColors : lightColors;
+  
+  // Inject colors into THEME so standard imports can still get metrics (spacing, radius, typography)
+  // Components should use the hook for reactive colors.
+  const currentTheme = {
+    ...THEME,
+    colors: currentColors,
+  };
+
+  return (
+    <ThemeContext.Provider value={{ isDark, colors: currentColors, THEME: currentTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  );
+};
+
+export const useAppTheme = () => useContext(ThemeContext);

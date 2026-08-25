@@ -9,7 +9,8 @@ import {
   Alert,
   ActivityIndicator,
   FlatList,
-  Modal
+  Modal,
+  Platform
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
@@ -26,7 +27,7 @@ import {
   Sparkles,
   X
 } from 'lucide-react-native';
-import { THEME } from '../theme/index.js';
+import { useAppTheme } from '../theme/index.js';
 import { getHabitById, getCheckinsByHabitId, deleteHabit, updateHabit } from '../database/queries.js';
 import { calculateStreakMetrics } from '../utils/streakEngine.js';
 import { HabitCalendarMatrix } from '../components/HabitCalendarMatrix.jsx';
@@ -36,6 +37,8 @@ import { cancelHabitReminder } from '../services/notificationManager.js';
 import { updateHabitWidget } from '../services/widgetService.js';
 
 export function HabitDetailScreen({ route, navigation }) {
+  const { THEME, colors, isDark } = useAppTheme();
+  
   const { habitId } = route.params;
   const [habit, setHabit] = useState(null);
   const [checkins, setCheckins] = useState([]);
@@ -50,7 +53,7 @@ export function HabitDetailScreen({ route, navigation }) {
     try {
       const h = await getHabitById(habitId);
       if (!h) {
-        Alert.alert('Không tìm thấy', 'Thói quen này không tồn tại.');
+        Alert.alert('Not found', 'This habit does not exist.');
         navigation.goBack();
         return;
       }
@@ -72,13 +75,28 @@ export function HabitDetailScreen({ route, navigation }) {
   }, [loadHabitData]);
 
   const handleDelete = () => {
+    const message = `Are you sure you want to permanently delete "${habit.title}" and its entire check-in history?`;
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(message)) {
+        cancelHabitReminder(habit.id).then(() => {
+          return deleteHabit(habit.id);
+        }).then(() => {
+          return updateHabitWidget();
+        }).then(() => {
+          navigation.navigate('Dashboard', { refresh: Date.now() });
+        });
+      }
+      return;
+    }
+
     Alert.alert(
-      'Xóa Thói Quen',
-      `Bạn có chắc chắn muốn xóa vĩnh viễn "${habit.title}" cùng toàn bộ lịch sử điểm danh?`,
+      'Delete Habit',
+      message,
       [
-        { text: 'Hủy', style: 'cancel' },
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Xóa',
+          text: 'Delete',
           style: 'destructive',
           onPress: async () => {
             await cancelHabitReminder(habit.id);
@@ -93,35 +111,34 @@ export function HabitDetailScreen({ route, navigation }) {
 
   if (loading || !habit || !metrics) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={THEME.colors.primary} />
+      <View style={[styles.centerContainer, { backgroundColor: colors.bg }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   const isBuild = habit.type === 'build';
-  const habitColor = habit.color_code || THEME.colors.primary;
+  const habitColor = habit.color_code || colors.primary;
   const photoCheckins = checkins.filter((c) => c.image_path != null);
   const notesCheckins = checkins.filter((c) => c.note && c.note.trim().length > 0);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
       {/* Top Header */}
-      <View style={styles.topHeader}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
-          <ArrowLeft size={22} color="#FFFFFF" />
+      <View style={[styles.topHeader, { backgroundColor: colors.bg, borderBottomColor: colors.surfaceBorder }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.iconBtn, { backgroundColor: colors.surface, borderColor: colors.surfaceBorder }]}>
+          <ArrowLeft size={22} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>{habit.title}</Text>
-        <TouchableOpacity onPress={handleDelete} style={styles.iconBtn}>
-          <Trash2 size={20} color={THEME.colors.danger} />
+        <Text style={[styles.headerTitle, { color: colors.textPrimary }]} numberOfLines={1}>{habit.title}</Text>
+        <TouchableOpacity onPress={handleDelete} style={[styles.iconBtn, { backgroundColor: colors.surface, borderColor: colors.surfaceBorder }]}>
+          <Trash2 size={20} color={colors.danger} />
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Habit Hero Card */}
-        <LinearGradient
-          colors={['#1E273A', '#0F1420']}
-          style={[styles.heroCard, { borderColor: `${habitColor}60` }]}
+        <View
+          style={[styles.heroCard, { backgroundColor: colors.surface, shadowColor: colors.textPrimary }]}
         >
           <View style={[styles.topAccent, { backgroundColor: habitColor }]} />
 
@@ -133,65 +150,85 @@ export function HabitDetailScreen({ route, navigation }) {
                 <ShieldCheck size={13} color={habitColor} />
               )}
               <Text style={[styles.typeBadgeText, { color: habitColor }]}>
-                {isBuild ? 'XÂY DỰNG (BUILD)' : 'TỪ BỎ / KỶ LUẬT (QUIT)'}
+                {isBuild ? 'Photo Proof' : 'I Survived'}
               </Text>
             </View>
 
-            <View style={styles.freezeBadge}>
-              <Snowflake size={13} color={THEME.colors.freeze} />
-              <Text style={styles.freezeBadgeText}>
-                {habit.freezes_left ?? 3}/3 Freeze
+            <View style={[styles.freezeBadge, { backgroundColor: `${colors.freeze}10`, borderColor: `${colors.freeze}30` }]}>
+              <Snowflake size={13} color={colors.freeze} />
+              <Text style={[styles.freezeBadgeText, { color: colors.freeze }]}>
+                {(typeof habit.freezes_left === 'number' && !isNaN(habit.freezes_left)) ? habit.freezes_left : 3}/3 Freeze
               </Text>
             </View>
           </View>
 
-          <Text style={styles.heroTitle}>{habit.title}</Text>
-          <Text style={styles.heroReminder}>⏰ Nhắc nhở lúc {habit.reminder_time || '08:00'} mỗi ngày</Text>
+          <Text style={[styles.heroTitle, { color: colors.textPrimary }]}>{habit.title}</Text>
+          <Text style={[styles.heroReminder, { color: colors.textSecondary }]}>⏰ Reminder at {habit.reminder_time || '08:00'} daily</Text>
 
           {/* Stats Row */}
           <View style={styles.statsRow}>
-            <View style={[styles.statBox, { borderColor: `${THEME.colors.warning}30` }]}>
-              <Flame size={18} color={THEME.colors.warning} />
-              <Text style={styles.statLabel}>STREAK HIỆN TẠI</Text>
-              <Text style={[styles.statNumber, { color: THEME.colors.warning }]}>
-                {metrics.currentStreak} <Text style={styles.statUnit}>ngày</Text>
-              </Text>
-            </View>
+            {habit.target_type === 'date' ? (() => {
+              const daysLeft = habit.target_date ? getDaysDifference(getTodayDateString(), habit.target_date) : 0;
+              return (
+                <>
+                  <View style={[styles.statBox, { backgroundColor: colors.surfaceSubtle }]}>
+                    <Flame size={18} color={colors.warning} />
+                    <Text style={[styles.statLabel, { color: colors.textMuted }]}>CURRENT STREAK</Text>
+                    <Text style={[styles.statNumber, { color: colors.warning }]}>
+                      {metrics.currentStreak} <Text style={[styles.statUnit, { color: colors.textSecondary }]}>days</Text>
+                    </Text>
+                  </View>
 
-            <View style={[styles.statBox, { borderColor: `${THEME.colors.primary}30` }]}>
-              <Trophy size={18} color={THEME.colors.primary} />
-              <Text style={styles.statLabel}>KỶ LỤC DÀI NHẤT</Text>
-              <Text style={[styles.statNumber, { color: THEME.colors.primary }]}>
-                {metrics.bestStreak} <Text style={styles.statUnit}>ngày</Text>
-              </Text>
-            </View>
+                  <View style={[styles.statBox, { backgroundColor: colors.surfaceSubtle }]}>
+                    <Calendar size={18} color={colors.primary} />
+                    <Text style={[styles.statLabel, { color: colors.textMuted }]}>DAYS LEFT</Text>
+                    <Text style={[styles.statNumber, { color: colors.primary }]}>
+                      {Math.max(0, daysLeft)} <Text style={[styles.statUnit, { color: colors.textSecondary }]}>days</Text>
+                    </Text>
+                  </View>
+                </>
+              );
+            })() : (
+              <>
+                <View style={[styles.statBox, { backgroundColor: colors.surfaceSubtle }]}>
+                  <Flame size={18} color={colors.warning} />
+                  <Text style={[styles.statLabel, { color: colors.textMuted }]}>CURRENT STREAK</Text>
+                  <Text style={[styles.statNumber, { color: colors.warning }]}>
+                    {metrics.currentStreak} <Text style={[styles.statUnit, { color: colors.textSecondary }]}>days</Text>
+                  </Text>
+                </View>
+
+                <View style={[styles.statBox, { backgroundColor: colors.surfaceSubtle }]}>
+                  <Trophy size={18} color={colors.primary} />
+                  <Text style={[styles.statLabel, { color: colors.textMuted }]}>BEST STREAK</Text>
+                  <Text style={[styles.statNumber, { color: colors.primary }]}>
+                    {metrics.bestStreak} <Text style={[styles.statUnit, { color: colors.textSecondary }]}>days</Text>
+                  </Text>
+                </View>
+              </>
+            )}
           </View>
-        </LinearGradient>
+        </View>
 
         {/* Video Recap Action Card (For Build Habits) */}
         {isBuild && (
           <TouchableOpacity
-            style={styles.recapBanner}
+            style={[styles.recapBanner, { borderColor: colors.surfaceBorder }]}
             onPress={() => setVideoModalVisible(true)}
             activeOpacity={0.88}
           >
-            <LinearGradient
-              colors={['#6366F1', '#4F46E5']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.recapBannerGradient}
-            >
+            <View style={[styles.recapBannerGradient, { backgroundColor: colors.primary }]}>
               <View style={styles.recapBannerLeft}>
-                <Film size={24} color="#FFFFFF" />
+                <Film size={24} color={isDark ? '#000' : '#FFF'} />
                 <View>
-                  <Text style={styles.recapBannerTitle}>Xuất Video Recap Timelapse</Text>
-                  <Text style={styles.recapBannerDesc}>
-                    Ghép {photoCheckins.length} ảnh watermark thành video ngắn 3-5s (FFmpeg Local)
+                  <Text style={[styles.recapBannerTitle, { color: isDark ? '#000' : '#FFF' }]}>Export Timelapse Recap Video</Text>
+                  <Text style={[styles.recapBannerDesc, { color: isDark ? '#000' : '#FFF' }]}>
+                    Merge {photoCheckins.length} watermarked photos into a 3-5s video (FFmpeg Local)
                   </Text>
                 </View>
               </View>
               <Sparkles size={18} color="#FDE047" />
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
         )}
 
@@ -205,17 +242,17 @@ export function HabitDetailScreen({ route, navigation }) {
         {/* Build Photo Gallery Timeline */}
         {isBuild && photoCheckins.length > 0 && (
           <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>BỘ SƯU TẬP ẢNH KỶ LUẬT ({photoCheckins.length})</Text>
+            <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>PHOTO PROOF GALLERY ({photoCheckins.length})</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoScroll}>
               {photoCheckins.map((item) => (
                 <TouchableOpacity
                   key={item.id}
-                  style={styles.photoThumbWrapper}
+                  style={[styles.photoThumbWrapper, { backgroundColor: colors.surfaceSubtle, borderColor: colors.surfaceBorder }]}
                   onPress={() => setSelectedPhoto(item)}
                 >
                   <Image source={{ uri: item.image_path }} style={styles.photoThumb} />
-                  <View style={styles.photoDayBadge}>
-                    <Text style={styles.photoDayText}>Ngày {item.day_number}</Text>
+                  <View style={[styles.photoDayBadge, { backgroundColor: colors.surface, borderColor: colors.surfaceBorder }]}>
+                    <Text style={[styles.photoDayText, { color: colors.textPrimary }]}>Day {item.day_number}</Text>
                   </View>
                 </TouchableOpacity>
               ))}
@@ -226,14 +263,14 @@ export function HabitDetailScreen({ route, navigation }) {
         {/* Reflection Notes History */}
         {notesCheckins.length > 0 && (
           <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>NHẬT KÝ & GHI CHÚ ({notesCheckins.length})</Text>
+            <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>LOG & NOTES ({notesCheckins.length})</Text>
             {notesCheckins.slice().reverse().map((item) => (
-              <View key={item.id} style={styles.noteCard}>
+              <View key={item.id} style={[styles.noteCard, { backgroundColor: colors.surface, borderColor: colors.surfaceBorder }]}>
                 <View style={styles.noteCardHeader}>
-                  <Text style={styles.noteDayNumber}>Ngày {item.day_number}</Text>
-                  <Text style={styles.noteDate}>{formatDisplayDate(item.checkin_date, 'short')}</Text>
+                  <Text style={[styles.noteDayNumber, { color: colors.warning }]}>Day {item.day_number}</Text>
+                  <Text style={[styles.noteDate, { color: colors.textMuted }]}>{formatDisplayDate(item.checkin_date, 'short')}</Text>
                 </View>
-                <Text style={styles.noteContent}>{item.note}</Text>
+                <Text style={[styles.noteContent, { color: colors.textSecondary }]}>{item.note}</Text>
               </View>
             ))}
           </View>
@@ -253,20 +290,20 @@ export function HabitDetailScreen({ route, navigation }) {
       {/* Full Size Photo View Modal */}
       {selectedPhoto && (
         <Modal visible={true} transparent animationType="fade" onRequestClose={() => setSelectedPhoto(null)}>
-          <View style={styles.photoModalOverlay}>
-            <TouchableOpacity style={styles.closePhotoBtn} onPress={() => setSelectedPhoto(null)}>
-              <X size={26} color="#FFFFFF" />
+          <View style={[styles.photoModalOverlay, { backgroundColor: colors.bg }]}>
+            <TouchableOpacity style={[styles.closePhotoBtn, { backgroundColor: colors.surface, borderColor: colors.surfaceBorder }]} onPress={() => setSelectedPhoto(null)}>
+              <X size={26} color={colors.textPrimary} />
             </TouchableOpacity>
             <Image
               source={{ uri: selectedPhoto.image_path }}
-              style={styles.fullSizePhoto}
+              style={[styles.fullSizePhoto, { borderColor: colors.surfaceBorder }]}
               resizeMode="contain"
             />
             <View style={styles.fullPhotoBottomInfo}>
-              <Text style={styles.fullPhotoDay}>Ngày {selectedPhoto.day_number}</Text>
-              <Text style={styles.fullPhotoDate}>{formatDisplayDate(selectedPhoto.checkin_date, 'full')}</Text>
+              <Text style={[styles.fullPhotoDay, { color: colors.warning }]}>Day {selectedPhoto.day_number}</Text>
+              <Text style={[styles.fullPhotoDate, { color: colors.textSecondary }]}>{formatDisplayDate(selectedPhoto.checkin_date, 'full')}</Text>
               {selectedPhoto.note ? (
-                <Text style={styles.fullPhotoNote}>{selectedPhoto.note}</Text>
+                <Text style={[styles.fullPhotoNote, { color: colors.textPrimary }]}>{selectedPhoto.note}</Text>
               ) : null}
             </View>
           </View>
@@ -279,11 +316,9 @@ export function HabitDetailScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: THEME.colors.bg,
   },
   centerContainer: {
     flex: 1,
-    backgroundColor: THEME.colors.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -291,32 +326,35 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: THEME.spacing.md,
-    paddingTop: 48,
-    paddingBottom: 14,
-    backgroundColor: '#0F141F',
+    paddingHorizontal: THEME.spacing.lg,
+    paddingTop: 56,
+    paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.surfaceBorder,
   },
   iconBtn: {
     padding: 8,
+    borderRadius: THEME.radius.full,
+    borderWidth: 1,
   },
   headerTitle: {
-    color: THEME.colors.textPrimary,
-    fontSize: 17,
-    fontWeight: '700',
-    maxWidth: '70%',
+    fontSize: 20,
+    fontFamily: THEME.typography.title2.fontFamily,
+    maxWidth: '65%',
+    textAlign: 'center',
   },
   scrollContent: {
-    padding: THEME.spacing.md,
+    padding: THEME.spacing.lg,
   },
   heroCard: {
     borderRadius: THEME.radius.xl,
     padding: THEME.spacing.lg,
-    borderWidth: 1.5,
-    marginBottom: THEME.spacing.md,
+    marginBottom: THEME.spacing.lg,
     position: 'relative',
     overflow: 'hidden',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
   },
   topAccent: {
     position: 'absolute',
@@ -329,87 +367,86 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: THEME.spacing.sm,
+    marginBottom: THEME.spacing.md,
   },
   typeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: THEME.radius.full,
     gap: 6,
   },
   typeBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: 12,
+    fontFamily: THEME.typography.bodyBold.fontFamily,
+    fontWeight: THEME.typography.bodyBold.fontWeight,
   },
   freezeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: `${THEME.colors.freeze}18`,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: THEME.radius.full,
     gap: 4,
     borderWidth: 1,
-    borderColor: `${THEME.colors.freeze}40`,
   },
   freezeBadgeText: {
-    color: THEME.colors.freeze,
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: THEME.typography.small.fontFamily,
+    fontWeight: THEME.typography.small.fontWeight,
+    textTransform: THEME.typography.small.textTransform,
   },
   heroTitle: {
-    color: THEME.colors.textPrimary,
-    fontSize: 24,
-    fontWeight: '800',
-    marginTop: 4,
-    marginBottom: 4,
+    fontSize: 32,
+    fontFamily: THEME.typography.hero.fontFamily,
+    letterSpacing: THEME.typography.hero.letterSpacing,
+    marginTop: 8,
+    marginBottom: 6,
   },
   heroReminder: {
-    color: THEME.colors.textSecondary,
-    fontSize: 13,
-    marginBottom: THEME.spacing.md,
+    fontSize: 14,
+    fontFamily: THEME.typography.body.fontFamily,
+    marginBottom: THEME.spacing.lg,
   },
   statsRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 12,
   },
   statBox: {
     flex: 1,
-    backgroundColor: '#0F141F',
     borderRadius: THEME.radius.md,
-    padding: 12,
-    borderWidth: 1,
+    padding: 16,
+    // removed border
   },
   statLabel: {
-    color: THEME.colors.textMuted,
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: THEME.typography.small.fontFamily,
+    textTransform: THEME.typography.small.textTransform,
     letterSpacing: 0.5,
-    marginTop: 6,
+    marginTop: 8,
   },
   statNumber: {
-    fontSize: 22,
-    fontWeight: '800',
-    marginTop: 2,
+    fontSize: 28,
+    fontFamily: THEME.typography.title1.fontFamily,
+    marginTop: 4,
   },
   statUnit: {
-    color: THEME.colors.textSecondary,
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 13,
+    fontFamily: THEME.typography.bodyBold.fontFamily,
+    fontWeight: THEME.typography.bodyBold.fontWeight,
   },
   recapBanner: {
     borderRadius: THEME.radius.lg,
     overflow: 'hidden',
-    marginBottom: THEME.spacing.md,
-    elevation: 4,
+    marginBottom: THEME.spacing.xl,
+    borderWidth: 1,
   },
   recapBannerGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 14,
+    padding: 16,
   },
   recapBannerLeft: {
     flexDirection: 'row',
@@ -418,37 +455,37 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   recapBannerTitle: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 16,
+    fontFamily: THEME.typography.bodyBold.fontFamily,
+    fontWeight: THEME.typography.bodyBold.fontWeight,
   },
   recapBannerDesc: {
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontSize: 11,
-    marginTop: 2,
+    opacity: 0.8,
+    fontSize: 13,
+    fontFamily: THEME.typography.body.fontFamily,
+    marginTop: 4,
   },
   sectionContainer: {
-    marginVertical: THEME.spacing.sm,
+    marginVertical: THEME.spacing.md,
   },
   sectionTitle: {
-    color: THEME.colors.textMuted,
     fontSize: 11,
-    fontWeight: '800',
+    fontFamily: THEME.typography.small.fontFamily,
+    textTransform: THEME.typography.small.textTransform,
+    fontWeight: THEME.typography.small.fontWeight,
     letterSpacing: 0.8,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   photoScroll: {
     flexDirection: 'row',
   },
   photoThumbWrapper: {
-    width: 100,
-    height: 140,
+    width: 110,
+    height: 150,
     borderRadius: THEME.radius.md,
     overflow: 'hidden',
-    marginRight: 10,
-    backgroundColor: '#141A26',
+    marginRight: 12,
     borderWidth: 1,
-    borderColor: THEME.colors.surfaceBorder,
     position: 'relative',
   },
   photoThumb: {
@@ -457,82 +494,83 @@ const styles = StyleSheet.create({
   },
   photoDayBadge: {
     position: 'absolute',
-    bottom: 4,
-    left: 4,
-    backgroundColor: 'rgba(10, 13, 20, 0.85)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    bottom: 6,
+    left: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: THEME.radius.sm,
+    borderWidth: 1,
   },
   photoDayText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '700',
+    fontSize: 11,
+    fontFamily: THEME.typography.small.fontFamily,
+    fontWeight: THEME.typography.small.fontWeight,
+    textTransform: THEME.typography.small.textTransform,
   },
   noteCard: {
-    backgroundColor: THEME.colors.surface,
     borderRadius: THEME.radius.md,
-    padding: 12,
-    marginBottom: 8,
+    padding: 16,
+    marginBottom: 10,
     borderWidth: 1,
-    borderColor: THEME.colors.surfaceBorder,
   },
   noteCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   noteDayNumber: {
-    color: THEME.colors.warning,
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 13,
+    fontFamily: THEME.typography.bodyBold.fontFamily,
+    fontWeight: THEME.typography.bodyBold.fontWeight,
   },
   noteDate: {
-    color: THEME.colors.textMuted,
-    fontSize: 11,
+    fontSize: 12,
+    fontFamily: THEME.typography.body.fontFamily,
   },
   noteContent: {
-    color: THEME.colors.textSecondary,
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 15,
+    lineHeight: 22,
+    fontFamily: THEME.typography.body.fontFamily,
   },
   photoModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.95)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   closePhotoBtn: {
     position: 'absolute',
-    top: 48,
-    right: 20,
+    top: 56,
+    right: 24,
     zIndex: 10,
-    padding: 8,
+    padding: 10,
+    borderRadius: THEME.radius.full,
+    borderWidth: 1,
   },
   fullSizePhoto: {
     width: '90%',
     height: '70%',
     borderRadius: THEME.radius.lg,
+    borderWidth: 1,
   },
   fullPhotoBottomInfo: {
-    marginTop: 16,
+    marginTop: 20,
     alignItems: 'center',
     paddingHorizontal: 24,
   },
   fullPhotoDay: {
-    color: THEME.colors.warning,
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: 22,
+    fontFamily: THEME.typography.title2.fontFamily,
   },
   fullPhotoDate: {
-    color: THEME.colors.textSecondary,
-    fontSize: 13,
-    marginTop: 2,
+    fontSize: 14,
+    marginTop: 4,
+    fontFamily: THEME.typography.body.fontFamily,
   },
   fullPhotoNote: {
-    color: THEME.colors.textPrimary,
-    fontSize: 14,
-    marginTop: 8,
+    fontSize: 15,
+    marginTop: 12,
     textAlign: 'center',
-  },
+    fontFamily: THEME.typography.body.fontFamily,
+    lineHeight: 22,
+  }
 });

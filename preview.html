@@ -1,13 +1,49 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Super Habit Discipline - Interactive Preview</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <style>
+    @font-face {
+      font-family: 'Gilroy';
+      font-style: normal;
+      font-weight: 300;
+      src: url('https://fonts.cdnfonts.com/s/16219/Gilroy-Light.woff') format('woff');
+    }
+
+    @font-face {
+      font-family: 'Gilroy';
+      font-style: normal;
+      font-weight: 400;
+      src: url('https://fonts.cdnfonts.com/s/16219/Gilroy-Regular.woff') format('woff');
+    }
+
+    @font-face {
+      font-family: 'Gilroy';
+      font-style: normal;
+      font-weight: 500;
+      src: url('https://fonts.cdnfonts.com/s/16219/Gilroy-Medium.woff') format('woff');
+    }
+
+    @font-face {
+      font-family: 'Gilroy';
+      font-style: normal;
+      font-weight: 700;
+      src: url('https://fonts.cdnfonts.com/s/16219/Gilroy-Bold.woff') format('woff');
+    }
+
+    @font-face {
+      font-family: 'Gilroy';
+      font-style: normal;
+      font-weight: 800;
+      src: url('https://fonts.cdnfonts.com/s/16219/Gilroy-Heavy.woff') format('woff');
+    }
+
     :root {
       --bg-color: #0A0D14;
       --surface-color: #121824;
@@ -31,7 +67,7 @@
 
     body {
       background-color: #05070B;
-      font-family: 'Outfit', sans-serif;
+      font-family: 'Gilroy', sans-serif;
       color: var(--text-primary);
       display: flex;
       justify-content: center;
@@ -434,6 +470,7 @@
     }
   </style>
 </head>
+
 <body>
 
   <div class="phone-container">
@@ -482,7 +519,8 @@
       <!-- Habit Cards -->
       <div class="cards-section">
         <!-- Card 1: Build -->
-        <div class="habit-card" style="border-color: rgba(16, 185, 129, 0.4);" onclick="openDetail('Chạy Bộ 5km Buổi Sáng', 'build', '#10B981', 12)">
+        <div class="habit-card" style="border-color: rgba(16, 185, 129, 0.4);"
+          onclick="openDetail('Chạy Bộ 5km Buổi Sáng', 'build', '#10B981', 12)">
           <div class="card-top-bar" style="background-color: #10B981;"></div>
           <div class="card-body">
             <div class="card-header-row">
@@ -492,7 +530,7 @@
               <div class="freeze-badge">❄️ 3/3</div>
             </div>
             <div class="card-title">Chạy Bộ 5km Buổi Sáng</div>
-            
+
             <div class="streak-display-row">
               <div class="streak-flame-group">
                 <div class="flame-icon">🔥</div>
@@ -501,14 +539,16 @@
               <div class="best-streak-badge">🏆 Kỷ lục: 12</div>
             </div>
 
-            <button class="card-action-btn" id="btn1" style="background: linear-gradient(135deg, #10B981, #059669);" onclick="event.stopPropagation(); checkinHabit(1, 'Chạy Bộ 5km Buổi Sáng');">
+            <button class="card-action-btn" id="btn1" style="background: linear-gradient(135deg, #10B981, #059669);"
+              onclick="event.stopPropagation(); checkinHabit(1, 'Chạy Bộ 5km Buổi Sáng');">
               📸 Chụp Ảnh Bằng Chứng
             </button>
           </div>
         </div>
 
         <!-- Card 2: Quit -->
-        <div class="habit-card" style="border-color: rgba(245, 158, 11, 0.4);" onclick="openDetail('Không Thức Khuya Sau 23:00', 'quit', '#F59E0B', 20)">
+        <div class="habit-card" style="border-color: rgba(245, 158, 11, 0.4);"
+          onclick="openDetail('Không Thức Khuya Sau 23:00', 'quit', '#F59E0B', 20)">
           <div class="card-top-bar" style="background-color: #F59E0B;"></div>
           <div class="card-body">
             <div class="card-header-row">
@@ -518,7 +558,7 @@
               <div class="freeze-badge">❄️ 3/3</div>
             </div>
             <div class="card-title">Không Thức Khuya Sau 23:00</div>
-            
+
             <div class="streak-display-row">
               <div class="streak-flame-group">
                 <div class="flame-icon">🔥</div>
@@ -527,7 +567,8 @@
               <div class="best-streak-badge" style="color: #F59E0B;">🏆 Kỷ lục: 20</div>
             </div>
 
-            <button class="card-action-btn" id="btn2" style="background: linear-gradient(135deg, #F59E0B, #D97706);" onclick="event.stopPropagation(); checkinHabit(2, 'Không Thức Khuya');">
+            <button class="card-action-btn" id="btn2" style="background: linear-gradient(135deg, #F59E0B, #D97706);"
+              onclick="event.stopPropagation(); checkinHabit(2, 'Không Thức Khuya');">
               🛡️ I Survived Today
             </button>
           </div>
@@ -586,10 +627,12 @@
         <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">
           Đồng bộ hai chiều với cơ sở dữ liệu Notion cá nhân của bạn.
         </p>
-        <div style="background: #161F2E; padding: 10px 14px; border-radius: 10px; font-size: 12px; margin-bottom: 10px; color: var(--text-muted); border: 1px solid var(--surface-border);">
+        <div
+          style="background: #161F2E; padding: 10px 14px; border-radius: 10px; font-size: 12px; margin-bottom: 10px; color: var(--text-muted); border: 1px solid var(--surface-border);">
           Token: ntn_***98492 (Đã liên kết)
         </div>
-        <button class="card-action-btn" style="background: var(--primary-color); margin-bottom: 8px;" onclick="alert('Đã đồng bộ 2 thói quen lên Notion thành công!')">
+        <button class="card-action-btn" style="background: var(--primary-color); margin-bottom: 8px;"
+          onclick="alert('Đã đồng bộ 2 thói quen lên Notion thành công!')">
           🔄 Đồng Bộ Ngay
         </button>
         <button class="modal-close-btn" onclick="closeModal('notionModal')">Đóng</button>
@@ -606,7 +649,8 @@
         <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 16px;">
           Bạn đã đạt mốc hình thành thói quen kỷ luật sắt! Tiếp tục duy trì để chạm mốc 90 ngày nhé!
         </p>
-        <button class="card-action-btn" style="background: linear-gradient(135deg, #F59E0B, #D97706);" onclick="closeModal('milestoneModal')">
+        <button class="card-action-btn" style="background: linear-gradient(135deg, #F59E0B, #D97706);"
+          onclick="closeModal('milestoneModal')">
           Tiếp Tục Kỷ Luật
         </button>
       </div>
@@ -619,12 +663,12 @@
     function checkinHabit(id, name) {
       const btn = document.getElementById('btn' + id);
       const streak = document.getElementById('streak' + id);
-      
+
       if (btn.classList.contains('completed')) return;
 
       btn.classList.add('completed');
       btn.innerHTML = '✓ Đã Điểm Danh Hôm Nay';
-      
+
       if (id === 1) {
         streak.innerHTML = '13<span class="streak-unit">ngày</span>';
       } else {
@@ -651,4 +695,5 @@
     }
   </script>
 </body>
+
 </html>

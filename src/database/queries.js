@@ -16,11 +16,11 @@ export async function getHabitById(id) {
   return await db.getFirstAsync('SELECT * FROM habits WHERE id = ?;', [id]);
 }
 
-export async function createHabit({ title, type, color_code = '#6366F1', reminder_time = '08:00' }) {
+export async function createHabit({ title, type, color_code = '#6366F1', reminder_time = '08:00', target_streak = 21, target_type = 'streak', target_date = null }) {
   const db = await getDatabase();
   const result = await db.runAsync(
-    'INSERT INTO habits (title, type, color_code, reminder_time, freezes_left) VALUES (?, ?, ?, ?, 3);',
-    [title.trim(), type, color_code, reminder_time]
+    'INSERT INTO habits (title, type, color_code, reminder_time, target_streak, target_type, target_date, freezes_left) VALUES (?, ?, ?, ?, ?, ?, ?, 3);',
+    [title.trim(), type, color_code, reminder_time, target_streak, target_type, target_date]
   );
   return result.lastInsertRowId;
 }
@@ -152,12 +152,14 @@ export async function getEnrichedHabitsList(today = getTodayDateString()) {
     }
 
     const metrics = calculateStreakMetrics(checkins, today);
+    const latestImageObj = checkins.slice().reverse().find(c => c.image_path);
 
     enriched.push({
       ...habit,
       ...metrics,
       checkinsCount: checkins.length,
-      recentCheckins: checkins.slice(-30) // last 30 for calendar preview
+      recentCheckins: checkins.slice(-30), // last 30 for calendar preview
+      latestImage: latestImageObj ? latestImageObj.image_path : null
     });
   }
 

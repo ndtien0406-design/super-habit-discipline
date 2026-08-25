@@ -11,7 +11,7 @@ const NOTION_BASE_URL = 'https://api.notion.com/v1';
  */
 export async function testNotionConnection(token, databaseId) {
   if (!token || !databaseId) {
-    return { success: false, message: 'Vui lòng nhập đầy đủ Token và Database ID.' };
+    return { success: false, message: 'Please enter both Token and Database ID.' };
   }
 
   const cleanDatabaseId = databaseId.replace(/-/g, '');
@@ -31,20 +31,20 @@ export async function testNotionConnection(token, databaseId) {
     if (!response.ok) {
       return {
         success: false,
-        message: data.message || `Lỗi Notion API (${response.status}): Không thể kết nối.`,
+        message: data.message || `Notion API Error (${response.status}): Cannot connect.`,
       };
     }
 
     const title = data.title && data.title[0] ? data.title[0].plain_text : 'Database';
     return {
       success: true,
-      message: `Kết nối thành công tới Database: "${title}"`,
+      message: `Successfully connected to Database: "${title}"`,
       databaseTitle: title,
     };
   } catch (error) {
     return {
       success: false,
-      message: `Lỗi kết nối mạng: ${error.message}`,
+      message: `Network connection error: ${error.message}`,
     };
   }
 }
@@ -56,7 +56,7 @@ function buildNotionPagePayload(databaseId, checkin) {
   const cleanDatabaseId = databaseId.replace(/-/g, '');
   const habitTypeLabel = checkin.habit_type === 'build' ? 'Build' : 'Quit';
   const statusLabel = checkin.status === 'completed' ? 'Completed' : (checkin.status === 'frozen' ? 'Frozen' : 'Failed');
-  const pageTitle = `[${checkin.habit_title}] Ngày ${checkin.day_number} (${checkin.checkin_date})`;
+  const pageTitle = `[${checkin.habit_title}] Day ${checkin.day_number} (${checkin.checkin_date})`;
 
   const childrenBlocks = [];
 
@@ -68,7 +68,7 @@ function buildNotionPagePayload(databaseId, checkin) {
         rich_text: [
           {
             type: 'text',
-            text: { content: checkin.habit_type === 'quit' ? '🛡️ Nhật Ký Phản Tư (Quit Habit)' : '📝 Ghi Chú Kỷ Luật' }
+            text: { content: checkin.habit_type === 'quit' ? '🛡️ Reflection Journal (Quit Habit)' : '📝 Discipline Notes' }
           }
         ]
       }
@@ -94,7 +94,7 @@ function buildNotionPagePayload(databaseId, checkin) {
         rich_text: [
           {
             type: 'text',
-            text: { content: `Điểm danh thành công ngày ${checkin.checkin_date}.` }
+            text: { content: `Successfully checked in on ${checkin.checkin_date}.` }
           }
         ]
       }
@@ -127,7 +127,7 @@ export async function syncCheckinsToNotion({ onProgress } = {}) {
   const databaseId = await getSetting('notion_database_id');
 
   if (!token || !databaseId) {
-    throw new Error('Chưa cấu hình Notion Integration Token hoặc Database ID trong Cài đặt.');
+    throw new Error('Notion Integration Token or Database ID is not configured in Settings.');
   }
 
   // Fetch checkins with notes or completed status
@@ -145,7 +145,7 @@ export async function syncCheckinsToNotion({ onProgress } = {}) {
     const item = checkins[i];
     
     if (onProgress) {
-      onProgress(i + 1, checkins.length, `${item.habit_title} - Ngày ${item.day_number}`);
+      onProgress(i + 1, checkins.length, `${item.habit_title} - Day ${item.day_number}`);
     }
 
     const payload = buildNotionPagePayload(databaseId, item);
