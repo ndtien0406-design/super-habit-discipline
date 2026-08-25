@@ -155,7 +155,7 @@ export function DashboardScreen({ navigation, route }) {
               <Flame size={16} color={isDark ? '#000' : '#FFF'} />
             </View>
             <TouchableOpacity onPress={() => setMilestoneData({ streak: 21, title: 'Thử Nghiệm Hiệu Ứng' })}>
-              <Text style={[styles.headerAppTitle, { color: colors.textPrimary }]}>SUPER CLIENT</Text>
+              <Text style={[styles.headerAppTitle, { color: colors.textPrimary }]}>MY NOTE</Text>
             </TouchableOpacity>
           </View>
           <Text style={[styles.dateSubtitle, { color: colors.textMuted }]}>{formatDisplayDate(today, 'full')}</Text>

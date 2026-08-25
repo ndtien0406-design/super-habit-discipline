@@ -101,7 +101,7 @@ export function SettingsScreen({ navigation }) {
         >
           <View style={styles.architectureHeader}>
             <Shield size={22} color={colors.primary} />
-            <Text style={[styles.architectureTitle, { color: colors.textPrimary }]}>Kiến Trúc Super Client (V4)</Text>
+            <Text style={[styles.architectureTitle, { color: colors.textPrimary }]}>Kiến Trúc My Note</Text>
           </View>
           <Text style={[styles.architectureDesc, { color: colors.textSecondary }]}>
             100% Ưu Tiên Ngoại Tuyến. Toàn bộ logic điểm danh, tính toán kỷ lục, render video bằng CPU thiết bị và đồng bộ Notion API trực tiếp từ điện thoại — không qua máy chủ trung gian.
