@@ -2,12 +2,13 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Camera, ShieldCheck, Flame, Trophy, Snowflake, ChevronRight, CheckCircle2, Calendar } from 'lucide-react-native';
-import { useAppTheme } from '../theme/index.js';
+import { useAppTheme, THEME } from '../theme/index.js';
 import { getDaysDifference, getTodayDateString, formatDisplayDate } from '../utils/dateHelper.js';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-export const CARD_WIDTH = Math.min(SCREEN_WIDTH * 0.85, 360);
+export const CARD_WIDTH = '100%';
 
+export function SwipeableHabitCard({ habit, onCheckinPress, onCardPress, onCardLongPress }) {
   const { THEME, colors, isDark } = useAppTheme();
   
   const isBuild = habit.type === 'build';
@@ -24,9 +25,6 @@ export const CARD_WIDTH = Math.min(SCREEN_WIDTH * 0.85, 360);
         style={[styles.cardWrapper, { backgroundColor: colors.surface, shadowColor: colors.textPrimary }]}
       >
         <View style={[styles.cardInner, { backgroundColor: colors.surface }]}>
-          {/* Top color accent bar */}
-          <View style={[styles.topAccentBar, { backgroundColor: habitColor }]} />
-
           {/* Header with Type badge and Freezes left */}
           <View style={styles.headerRow}>
             <View style={[styles.typeBadge, { backgroundColor: `${habitColor}25` }]}>
@@ -41,7 +39,7 @@ export const CARD_WIDTH = Math.min(SCREEN_WIDTH * 0.85, 360);
             <View style={[styles.freezeBadge, { backgroundColor: `${colors.freeze}10`, borderColor: `${colors.freeze}30` }]}>
               <Snowflake size={13} color={colors.freeze} />
               <Text style={[styles.freezeBadgeText, { color: colors.freeze }]}>
-                {(typeof habit.freezes_left === 'number' && !isNaN(habit.freezes_left)) ? habit.freezes_left : 3}/3 Freeze
+                {(typeof habit.freezes_left === 'number' && !isNaN(habit.freezes_left)) ? habit.freezes_left : 3}/3 Bỏ qua
               </Text>
             </View>
           </View>
@@ -51,8 +49,13 @@ export const CARD_WIDTH = Math.min(SCREEN_WIDTH * 0.85, 360);
             <Text style={[styles.habitTitle, { color: colors.textPrimary }]} numberOfLines={2}>
               {habit.title}
             </Text>
+            {habit.notes ? (
+              <Text style={[styles.habitNotes, { color: colors.textMuted }]} numberOfLines={1}>
+                {habit.notes}
+              </Text>
+            ) : null}
             <Text style={[styles.reminderTimeText, { color: colors.textSecondary }]}>
-              ⏰ Reminder: {habit.reminder_time || '08:00'} daily
+              ⏰ Nhắc nhở: {habit.reminder_time ? habit.reminder_time.split(',').join(' & ') : '08:00'} mỗi ngày
             </Text>
           </View>
 
@@ -65,26 +68,26 @@ export const CARD_WIDTH = Math.min(SCREEN_WIDTH * 0.85, 360);
                   <View style={[styles.statBox, { backgroundColor: colors.surfaceSubtle }]}>
                     <View style={styles.statIconHeader}>
                       <Flame size={18} color={colors.warning} />
-                      <Text style={[styles.statLabel, { color: colors.textMuted }]}>CURRENT STREAK</Text>
+                      <Text style={[styles.statLabel, { color: colors.textMuted }]}>CHUỖI HIỆN TẠI</Text>
                     </View>
                     <View style={styles.statValueRow}>
                       <Text style={[styles.statValue, { color: colors.warning }]}>
                         {habit.currentStreak || 0}
                       </Text>
-                      <Text style={[styles.statUnit, { color: colors.textSecondary }]}>days</Text>
+                      <Text style={[styles.statUnit, { color: colors.textSecondary }]}>ngày</Text>
                     </View>
                   </View>
 
                   <View style={[styles.statBox, { backgroundColor: colors.surfaceSubtle }]}>
                     <View style={styles.statIconHeader}>
                       <Calendar size={16} color={colors.primary} />
-                      <Text style={[styles.statLabel, { color: colors.textMuted }]}>DAYS LEFT</Text>
+                      <Text style={[styles.statLabel, { color: colors.textMuted }]}>SỐ NGÀY CÒN LẠI</Text>
                     </View>
                     <View style={styles.statValueRow}>
                       <Text style={[styles.statValue, { color: colors.primary }]}>
                         {Math.max(0, daysLeft)}
                       </Text>
-                      <Text style={[styles.statUnit, { color: colors.textSecondary }]}>days</Text>
+                      <Text style={[styles.statUnit, { color: colors.textSecondary }]}>ngày</Text>
                     </View>
                   </View>
                 </>
@@ -95,13 +98,13 @@ export const CARD_WIDTH = Math.min(SCREEN_WIDTH * 0.85, 360);
                 <View style={[styles.statBox, { backgroundColor: colors.surfaceSubtle }]}>
                   <View style={styles.statIconHeader}>
                     <Flame size={18} color={colors.warning} />
-                    <Text style={[styles.statLabel, { color: colors.textMuted }]}>CURRENT STREAK</Text>
+                    <Text style={[styles.statLabel, { color: colors.textMuted }]}>CHUỖI HIỆN TẠI</Text>
                   </View>
                   <View style={styles.statValueRow}>
                     <Text style={[styles.statValue, { color: colors.warning }]}>
                       {habit.currentStreak || 0}
                     </Text>
-                    <Text style={[styles.statUnit, { color: colors.textSecondary }]}>days</Text>
+                    <Text style={[styles.statUnit, { color: colors.textSecondary }]}>ngày</Text>
                   </View>
                 </View>
 
@@ -109,13 +112,13 @@ export const CARD_WIDTH = Math.min(SCREEN_WIDTH * 0.85, 360);
                 <View style={[styles.statBox, { backgroundColor: colors.surfaceSubtle }]}>
                   <View style={styles.statIconHeader}>
                     <Trophy size={16} color={colors.primary} />
-                    <Text style={[styles.statLabel, { color: colors.textMuted }]}>BEST STREAK</Text>
+                    <Text style={[styles.statLabel, { color: colors.textMuted }]}>KỶ LỤC DÀI NHẤT</Text>
                   </View>
                   <View style={styles.statValueRow}>
                     <Text style={[styles.statValue, { color: colors.primary }]}>
                       {habit.bestStreak || 0}
                     </Text>
-                    <Text style={[styles.statUnit, { color: colors.textSecondary }]}>days</Text>
+                    <Text style={[styles.statUnit, { color: colors.textSecondary }]}>ngày</Text>
                   </View>
                 </View>
               </>
@@ -127,7 +130,7 @@ export const CARD_WIDTH = Math.min(SCREEN_WIDTH * 0.85, 360);
             {isCompleted ? (
               <View style={[styles.completedBanner, { backgroundColor: `${colors.success}10`, borderColor: `${colors.success}30` }]}>
                 <CheckCircle2 size={20} color={colors.success} />
-                <Text style={[styles.completedText, { color: colors.success }]}>Completed today!</Text>
+                <Text style={[styles.completedText, { color: colors.success }]}>Hoàn thành hôm nay!</Text>
               </View>
             ) : (
               <TouchableOpacity
@@ -142,12 +145,12 @@ export const CARD_WIDTH = Math.min(SCREEN_WIDTH * 0.85, 360);
                   {isBuild ? (
                     <>
                       <Camera size={20} color={isDark ? '#000' : '#FFF'} />
-                      <Text style={[styles.actionButtonText, { color: isDark ? '#000' : '#FFF' }]}>Log Proof (Photo)</Text>
+                      <Text style={[styles.actionButtonText, { color: isDark ? '#000' : '#FFF' }]}>Chụp Ảnh Minh Chứng</Text>
                     </>
                   ) : (
                     <>
                       <ShieldCheck size={20} color={isDark ? '#000' : '#FFF'} />
-                      <Text style={[styles.actionButtonText, { color: isDark ? '#000' : '#FFF' }]}>I Survived</Text>
+                      <Text style={[styles.actionButtonText, { color: isDark ? '#000' : '#FFF' }]}>Đã Vượt Qua</Text>
                     </>
                   )}
                 </View>
@@ -156,7 +159,7 @@ export const CARD_WIDTH = Math.min(SCREEN_WIDTH * 0.85, 360);
 
             {/* Tap for details hint */}
             <View style={styles.detailHintRow}>
-              <Text style={[styles.detailHintText, { color: colors.textMuted }]}>View history & recap</Text>
+              <Text style={[styles.detailHintText, { color: colors.textMuted }]}>Xem lịch sử & tổng kết</Text>
               <ChevronRight size={14} color={colors.textMuted} />
             </View>
           </View>
@@ -168,9 +171,8 @@ export const CARD_WIDTH = Math.min(SCREEN_WIDTH * 0.85, 360);
 
 const styles = StyleSheet.create({
   cardContainer: {
-    width: CARD_WIDTH,
-    marginHorizontal: 8,
-    marginVertical: 12,
+    width: '100%',
+    marginVertical: 8,
   },
   cardWrapper: {
     borderRadius: THEME.radius.lg,
@@ -182,7 +184,7 @@ const styles = StyleSheet.create({
   },
   cardInner: {
     padding: THEME.spacing.lg,
-    minHeight: 380,
+    minHeight: 320,
     justifyContent: 'space-between',
   },
   topAccentBar: {
@@ -229,6 +231,12 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontFamily: THEME.typography.title1.fontFamily,
     letterSpacing: THEME.typography.title1.letterSpacing,
+    marginBottom: 4,
+  },
+  habitNotes: {
+    fontSize: 13,
+    fontFamily: THEME.typography.body.fontFamily,
+    fontStyle: 'italic',
     marginBottom: 8,
   },
   reminderTimeText: {

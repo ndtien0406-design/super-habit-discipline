@@ -16,20 +16,20 @@ export async function getHabitById(id) {
   return await db.getFirstAsync('SELECT * FROM habits WHERE id = ?;', [id]);
 }
 
-export async function createHabit({ title, type, color_code = '#6366F1', reminder_time = '08:00', target_streak = 21, target_type = 'streak', target_date = null }) {
+export async function createHabit({ title, type, color_code = '#6366F1', reminder_time = '08:00', target_streak = 21, target_type = 'streak', target_date = null, notes = '', tag = '', latitude = null, longitude = null }) {
   const db = await getDatabase();
   const result = await db.runAsync(
-    'INSERT INTO habits (title, type, color_code, reminder_time, target_streak, target_type, target_date, freezes_left) VALUES (?, ?, ?, ?, ?, ?, ?, 3);',
-    [title.trim(), type, color_code, reminder_time, target_streak, target_type, target_date]
+    'INSERT INTO habits (title, type, color_code, reminder_time, target_streak, target_type, target_date, notes, tag, latitude, longitude, freezes_left) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 3);',
+    [title.trim(), type, color_code, reminder_time, target_streak, target_type, target_date, notes.trim(), tag.trim(), latitude, longitude]
   );
   return result.lastInsertRowId;
 }
 
-export async function updateHabit(id, { title, color_code, reminder_time, freezes_left }) {
+export async function updateHabit(id, { title, color_code, reminder_time, notes, tag, latitude, longitude, freezes_left }) {
   const db = await getDatabase();
   return await db.runAsync(
-    'UPDATE habits SET title = ?, color_code = ?, reminder_time = ?, freezes_left = ? WHERE id = ?;',
-    [title.trim(), color_code, reminder_time, freezes_left, id]
+    'UPDATE habits SET title = ?, color_code = ?, reminder_time = ?, notes = ?, tag = ?, latitude = ?, longitude = ?, freezes_left = ? WHERE id = ?;',
+    [title.trim(), color_code, reminder_time, notes?.trim() || '', tag?.trim() || '', latitude || null, longitude || null, freezes_left, id]
   );
 }
 
@@ -118,6 +118,49 @@ export async function getAllSettings() {
   const settings = {};
   rows.forEach(r => { settings[r.key] = r.value; });
   return settings;
+}
+
+// ==========================================
+// GAMIFICATION
+// ==========================================
+
+export async function addExp(amount) {
+  const currentExpStr = await getSetting('user_exp', '0');
+  const currentLevelStr = await getSetting('user_level', '1');
+  
+  let exp = parseInt(currentExpStr, 10);
+  let level = parseInt(currentLevelStr, 10);
+  
+  exp += amount;
+  
+  // Calculate level ups. Base formula: next_level_exp = level * 100
+  let expNeeded = level * 100;
+  while (exp >= expNeeded) {
+    exp -= expNeeded;
+    level += 1;
+    expNeeded = level * 100;
+  }
+  
+  // Update HP slightly on level up or exp gain
+  const maxHpStr = await getSetting('user_max_hp', '100');
+  let maxHp = parseInt(maxHpStr, 10);
+  maxHp = 100 + (level - 1) * 10;
+  
+  await setSetting('user_exp', exp.toString());
+  await setSetting('user_level', level.toString());
+  await setSetting('user_max_hp', maxHp.toString());
+  await setSetting('user_hp', maxHp.toString()); // heal on level up/gain
+  
+  return { exp, level, maxHp };
+}
+
+export async function deductHp(amount) {
+  const hpStr = await getSetting('user_hp', '100');
+  let hp = parseInt(hpStr, 10);
+  hp -= amount;
+  if (hp < 0) hp = 0;
+  await setSetting('user_hp', hp.toString());
+  return hp;
 }
 
 // ==========================================

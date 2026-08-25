@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { getRecentDays, formatDisplayDate, getTodayDateString } from '../utils/dateHelper.js';
-import { useAppTheme } from '../theme/index.js';
+import { useAppTheme, THEME } from '../theme/index.js';
 
 export function HabitCalendarMatrix({ checkins = [], habitColor, daysCount = 35 }) {
   const { THEME, colors, isDark } = useAppTheme();
@@ -136,3 +136,4 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 });
+

@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Sparkles, Trophy, Check } from 'lucide-react-native';
-import { useAppTheme } from '../theme/index.js';
+import { useAppTheme, THEME } from '../theme/index.js';
 import { getMilestoneDetails } from '../utils/streakEngine.js';
 
 export function MilestoneModal({ visible, streakCount = 7, habitTitle = '', onClose }) {
@@ -30,13 +30,13 @@ export function MilestoneModal({ visible, streakCount = 7, habitTitle = '', onCl
               <View style={styles.sparkleRow}>
                 <Sparkles size={18} color={details.accent} />
                 <Text style={[styles.milestoneTag, { color: details.accent }]}>
-                  MILESTONE REACHED
+                  ĐẠT CỘT MỐC MỚI
                 </Text>
                 <Sparkles size={18} color={details.accent} />
               </View>
               <Text style={[styles.title, { color: colors.textPrimary }]}>{details.title}</Text>
               <Text style={[styles.habitSubtitle, { color: colors.textSecondary }]}>
-                Habit: <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>{habitTitle}</Text>
+                Thói quen: <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>{habitTitle}</Text>
               </Text>
             </View>
 
@@ -47,7 +47,7 @@ export function MilestoneModal({ visible, streakCount = 7, habitTitle = '', onCl
                 style={styles.streakHighlightGradient}
               >
                 <Text style={[styles.streakNumber, { color: colors.warning }]}>{streakCount}</Text>
-                <Text style={[styles.streakLabel, { color: colors.textSecondary }]}>CONSECUTIVE DAYS</Text>
+                <Text style={[styles.streakLabel, { color: colors.textSecondary }]}>NGÀY LIÊN TIẾP</Text>
               </LinearGradient>
             </View>
 
@@ -67,7 +67,7 @@ export function MilestoneModal({ visible, streakCount = 7, habitTitle = '', onCl
                 style={styles.buttonGradient}
               >
                 <Check size={20} color="#FFFFFF" />
-                <Text style={styles.buttonText}>Awesome, Keep It Up!</Text>
+                <Text style={styles.buttonText}>Tuyệt vời, Tiếp tục phát huy!</Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -186,3 +186,4 @@ const styles = StyleSheet.create({
     fontFamily: THEME.typography.bodyBold.fontFamily,
   },
 });
+

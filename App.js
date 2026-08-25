@@ -67,28 +67,28 @@ export default function App() {
         const existingHabits = await getAllHabits();
         if (existingHabits.length === 0) {
           const habit1Id = await createHabit({
-            title: 'Morning 5km Run',
+            title: 'Chạy bộ 5km buổi sáng',
             type: 'build',
             color_code: '#F66F00',
             reminder_time: '06:00',
           });
           await scheduleHabitReminder({
             id: habit1Id,
-            title: 'Morning 5km Run',
+            title: 'Chạy bộ 5km buổi sáng',
             type: 'build',
             color_code: '#F66F00',
             reminder_time: '06:00',
           });
 
           const habit2Id = await createHabit({
-            title: 'Sleep Before 23:00',
+            title: 'Ngủ trước 23:00',
             type: 'quit',
             color_code: '#4DA2FF',
             reminder_time: '22:30',
           });
           await scheduleHabitReminder({
             id: habit2Id,
-            title: 'Sleep Before 23:00',
+            title: 'Ngủ trước 23:00',
             type: 'quit',
             color_code: '#4DA2FF',
             reminder_time: '22:30',

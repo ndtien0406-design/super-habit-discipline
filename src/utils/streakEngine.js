@@ -4,21 +4,21 @@ export const MILESTONES = [7, 21, 90];
 
 export const MILESTONE_INFO = {
   7: {
-    title: 'Lightning Start (7 Days)',
+    title: 'Khởi Đầu Tốc Độ',
     badge: '⚡',
-    description: 'You\'ve conquered the challenging first week! Your brain is forming new reflexes.',
+    description: 'Bạn đã vượt qua tuần đầu tiên đầy thử thách! Não bộ đang dần hình thành phản xạ mới.',
     accent: '#10B981',
   },
   21: {
-    title: 'Discipline Breakthrough (21 Days)',
+    title: 'Đột Phá Kỷ Luật',
     badge: '🔥',
-    description: '21 days to form a golden habit! This behavior has become a part of who you are.',
+    description: 'Chỉ chút nữa là bạn sẽ có người yêu',
     accent: '#F59E0B',
   },
   90: {
-    title: 'Master of Self-Control (90 Days)',
+    title: 'Bậc Thầy Kỷ Luật',
     badge: '👑',
-    description: '90 days to permanently change your lifestyle! You have completely mastered personal discipline.',
+    description: '90 ngày để thay đổi hoàn toàn phong cách sống! Bạn đã làm chủ được kỷ luật bản thân.',
     accent: '#A855F7',
   }
 };

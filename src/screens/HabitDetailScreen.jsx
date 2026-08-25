@@ -25,14 +25,16 @@ import {
   ShieldCheck,
   Calendar,
   Sparkles,
-  X
+  X,
+  Download
 } from 'lucide-react-native';
-import { useAppTheme } from '../theme/index.js';
+import * as MediaLibrary from 'expo-media-library';
+import { useAppTheme, THEME } from '../theme/index.js';
 import { getHabitById, getCheckinsByHabitId, deleteHabit, updateHabit } from '../database/queries.js';
 import { calculateStreakMetrics } from '../utils/streakEngine.js';
 import { HabitCalendarMatrix } from '../components/HabitCalendarMatrix.jsx';
 import { VideoRecapModal } from '../components/VideoRecapModal.jsx';
-import { formatDisplayDate, getTodayDateString } from '../utils/dateHelper.js';
+import { formatDisplayDate, getTodayDateString, getDaysDifference } from '../utils/dateHelper.js';
 import { cancelHabitReminder } from '../services/notificationManager.js';
 import { updateHabitWidget } from '../services/widgetService.js';
 
@@ -53,7 +55,7 @@ export function HabitDetailScreen({ route, navigation }) {
     try {
       const h = await getHabitById(habitId);
       if (!h) {
-        Alert.alert('Not found', 'This habit does not exist.');
+        Alert.alert('Không tìm thấy', 'Thói quen này không tồn tại.');
         navigation.goBack();
         return;
       }
@@ -75,7 +77,7 @@ export function HabitDetailScreen({ route, navigation }) {
   }, [loadHabitData]);
 
   const handleDelete = () => {
-    const message = `Are you sure you want to permanently delete "${habit.title}" and its entire check-in history?`;
+    const message = `Bạn có chắc chắn muốn xóa vĩnh viễn thói quen "${habit.title}" và toàn bộ lịch sử điểm danh của nó không?`;
 
     if (Platform.OS === 'web') {
       if (window.confirm(message)) {
@@ -91,12 +93,12 @@ export function HabitDetailScreen({ route, navigation }) {
     }
 
     Alert.alert(
-      'Delete Habit',
+      'Xóa Thói Quen',
       message,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: 'Hủy', style: 'cancel' },
         {
-          text: 'Delete',
+          text: 'Xóa',
           style: 'destructive',
           onPress: async () => {
             await cancelHabitReminder(habit.id);
@@ -107,6 +109,22 @@ export function HabitDetailScreen({ route, navigation }) {
         },
       ]
     );
+  };
+
+  const handleDownloadPhoto = async () => {
+    if (!selectedPhoto) return;
+    try {
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Từ chối quyền', 'Cần cấp quyền truy cập Thư viện ảnh để lưu.');
+        return;
+      }
+      
+      await MediaLibrary.saveToLibraryAsync(selectedPhoto.image_path);
+      Alert.alert('Thành công', 'Ảnh đã được tải xuống Thư viện (Gallery) của máy!');
+    } catch (e) {
+      Alert.alert('Lỗi', 'Không thể lưu ảnh: ' + e.message);
+    }
   };
 
   if (loading || !habit || !metrics) {
@@ -130,9 +148,14 @@ export function HabitDetailScreen({ route, navigation }) {
           <ArrowLeft size={22} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.textPrimary }]} numberOfLines={1}>{habit.title}</Text>
-        <TouchableOpacity onPress={handleDelete} style={[styles.iconBtn, { backgroundColor: colors.surface, borderColor: colors.surfaceBorder }]}>
-          <Trash2 size={20} color={colors.danger} />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <TouchableOpacity onPress={() => navigation.navigate('EditHabit', { habitId: habit.id })} style={[styles.iconBtn, { backgroundColor: colors.surface, borderColor: colors.surfaceBorder }]}>
+            <Edit size={20} color={colors.textPrimary} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleDelete} style={[styles.iconBtn, { backgroundColor: colors.surface, borderColor: colors.surfaceBorder }]}>
+            <Trash2 size={20} color={colors.danger} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -140,7 +163,6 @@ export function HabitDetailScreen({ route, navigation }) {
         <View
           style={[styles.heroCard, { backgroundColor: colors.surface, shadowColor: colors.textPrimary }]}
         >
-          <View style={[styles.topAccent, { backgroundColor: habitColor }]} />
 
           <View style={styles.typeBadgeRow}>
             <View style={[styles.typeBadge, { backgroundColor: `${habitColor}25` }]}>
@@ -150,20 +172,26 @@ export function HabitDetailScreen({ route, navigation }) {
                 <ShieldCheck size={13} color={habitColor} />
               )}
               <Text style={[styles.typeBadgeText, { color: habitColor }]}>
-                {isBuild ? 'Photo Proof' : 'I Survived'}
+                {isBuild ? 'Chụp Ảnh' : 'Đã Vượt Qua'}
               </Text>
             </View>
 
             <View style={[styles.freezeBadge, { backgroundColor: `${colors.freeze}10`, borderColor: `${colors.freeze}30` }]}>
               <Snowflake size={13} color={colors.freeze} />
               <Text style={[styles.freezeBadgeText, { color: colors.freeze }]}>
-                {(typeof habit.freezes_left === 'number' && !isNaN(habit.freezes_left)) ? habit.freezes_left : 3}/3 Freeze
+                {(typeof habit.freezes_left === 'number' && !isNaN(habit.freezes_left)) ? habit.freezes_left : 3}/3 Bỏ qua
               </Text>
             </View>
           </View>
 
           <Text style={[styles.heroTitle, { color: colors.textPrimary }]}>{habit.title}</Text>
-          <Text style={[styles.heroReminder, { color: colors.textSecondary }]}>⏰ Reminder at {habit.reminder_time || '08:00'} daily</Text>
+          <Text style={[styles.heroReminder, { color: colors.textSecondary }]}>⏰ Nhắc nhở vào {habit.reminder_time ? habit.reminder_time.split(',').join(' & ') : '08:00'} mỗi ngày</Text>
+          
+          {habit.notes ? (
+            <Text style={[styles.heroNotes, { color: colors.textMuted, backgroundColor: colors.surfaceSubtle }]}>
+              "{habit.notes}"
+            </Text>
+          ) : null}
 
           {/* Stats Row */}
           <View style={styles.statsRow}>
@@ -173,17 +201,17 @@ export function HabitDetailScreen({ route, navigation }) {
                 <>
                   <View style={[styles.statBox, { backgroundColor: colors.surfaceSubtle }]}>
                     <Flame size={18} color={colors.warning} />
-                    <Text style={[styles.statLabel, { color: colors.textMuted }]}>CURRENT STREAK</Text>
+                    <Text style={[styles.statLabel, { color: colors.textMuted }]}>CHUỖI HIỆN TẠI</Text>
                     <Text style={[styles.statNumber, { color: colors.warning }]}>
-                      {metrics.currentStreak} <Text style={[styles.statUnit, { color: colors.textSecondary }]}>days</Text>
+                      {metrics.currentStreak} <Text style={[styles.statUnit, { color: colors.textSecondary }]}>ngày</Text>
                     </Text>
                   </View>
 
                   <View style={[styles.statBox, { backgroundColor: colors.surfaceSubtle }]}>
                     <Calendar size={18} color={colors.primary} />
-                    <Text style={[styles.statLabel, { color: colors.textMuted }]}>DAYS LEFT</Text>
+                    <Text style={[styles.statLabel, { color: colors.textMuted }]}>SỐ NGÀY CÒN LẠI</Text>
                     <Text style={[styles.statNumber, { color: colors.primary }]}>
-                      {Math.max(0, daysLeft)} <Text style={[styles.statUnit, { color: colors.textSecondary }]}>days</Text>
+                      {Math.max(0, daysLeft)} <Text style={[styles.statUnit, { color: colors.textSecondary }]}>ngày</Text>
                     </Text>
                   </View>
                 </>
@@ -192,17 +220,17 @@ export function HabitDetailScreen({ route, navigation }) {
               <>
                 <View style={[styles.statBox, { backgroundColor: colors.surfaceSubtle }]}>
                   <Flame size={18} color={colors.warning} />
-                  <Text style={[styles.statLabel, { color: colors.textMuted }]}>CURRENT STREAK</Text>
+                  <Text style={[styles.statLabel, { color: colors.textMuted }]}>CHUỖI HIỆN TẠI</Text>
                   <Text style={[styles.statNumber, { color: colors.warning }]}>
-                    {metrics.currentStreak} <Text style={[styles.statUnit, { color: colors.textSecondary }]}>days</Text>
+                    {metrics.currentStreak} <Text style={[styles.statUnit, { color: colors.textSecondary }]}>ngày</Text>
                   </Text>
                 </View>
 
                 <View style={[styles.statBox, { backgroundColor: colors.surfaceSubtle }]}>
                   <Trophy size={18} color={colors.primary} />
-                  <Text style={[styles.statLabel, { color: colors.textMuted }]}>BEST STREAK</Text>
+                  <Text style={[styles.statLabel, { color: colors.textMuted }]}>KỶ LỤC DÀI NHẤT</Text>
                   <Text style={[styles.statNumber, { color: colors.primary }]}>
-                    {metrics.bestStreak} <Text style={[styles.statUnit, { color: colors.textSecondary }]}>days</Text>
+                    {metrics.bestStreak} <Text style={[styles.statUnit, { color: colors.textSecondary }]}>ngày</Text>
                   </Text>
                 </View>
               </>
@@ -221,9 +249,9 @@ export function HabitDetailScreen({ route, navigation }) {
               <View style={styles.recapBannerLeft}>
                 <Film size={24} color={isDark ? '#000' : '#FFF'} />
                 <View>
-                  <Text style={[styles.recapBannerTitle, { color: isDark ? '#000' : '#FFF' }]}>Export Timelapse Recap Video</Text>
+                  <Text style={[styles.recapBannerTitle, { color: isDark ? '#000' : '#FFF' }]}>Xuất Video Timelapse Kỷ Niệm</Text>
                   <Text style={[styles.recapBannerDesc, { color: isDark ? '#000' : '#FFF' }]}>
-                    Merge {photoCheckins.length} watermarked photos into a 3-5s video (FFmpeg Local)
+                    Ghép {photoCheckins.length} ảnh có đóng dấu thành video 3-5s (FFmpeg Local)
                   </Text>
                 </View>
               </View>
@@ -242,7 +270,12 @@ export function HabitDetailScreen({ route, navigation }) {
         {/* Build Photo Gallery Timeline */}
         {isBuild && photoCheckins.length > 0 && (
           <View style={styles.sectionContainer}>
-            <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>PHOTO PROOF GALLERY ({photoCheckins.length})</Text>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>THƯ VIỆN ẢNH CHỨNG MINH ({photoCheckins.length})</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('VisualTimeline', { habitId: habit.id, habitTitle: habit.title })}>
+                <Text style={{ color: colors.primary, fontSize: 12, fontWeight: 'bold' }}>Xem tất cả &gt;</Text>
+              </TouchableOpacity>
+            </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoScroll}>
               {photoCheckins.map((item) => (
                 <TouchableOpacity
@@ -252,7 +285,7 @@ export function HabitDetailScreen({ route, navigation }) {
                 >
                   <Image source={{ uri: item.image_path }} style={styles.photoThumb} />
                   <View style={[styles.photoDayBadge, { backgroundColor: colors.surface, borderColor: colors.surfaceBorder }]}>
-                    <Text style={[styles.photoDayText, { color: colors.textPrimary }]}>Day {item.day_number}</Text>
+                    <Text style={[styles.photoDayText, { color: colors.textPrimary }]}>Ngày {item.day_number}</Text>
                   </View>
                 </TouchableOpacity>
               ))}
@@ -263,11 +296,11 @@ export function HabitDetailScreen({ route, navigation }) {
         {/* Reflection Notes History */}
         {notesCheckins.length > 0 && (
           <View style={styles.sectionContainer}>
-            <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>LOG & NOTES ({notesCheckins.length})</Text>
+            <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>NHẬT KÝ & GHI CHÚ ({notesCheckins.length})</Text>
             {notesCheckins.slice().reverse().map((item) => (
               <View key={item.id} style={[styles.noteCard, { backgroundColor: colors.surface, borderColor: colors.surfaceBorder }]}>
                 <View style={styles.noteCardHeader}>
-                  <Text style={[styles.noteDayNumber, { color: colors.warning }]}>Day {item.day_number}</Text>
+                  <Text style={[styles.noteDayNumber, { color: colors.warning }]}>Ngày {item.day_number}</Text>
                   <Text style={[styles.noteDate, { color: colors.textMuted }]}>{formatDisplayDate(item.checkin_date, 'short')}</Text>
                 </View>
                 <Text style={[styles.noteContent, { color: colors.textSecondary }]}>{item.note}</Text>
@@ -294,13 +327,17 @@ export function HabitDetailScreen({ route, navigation }) {
             <TouchableOpacity style={[styles.closePhotoBtn, { backgroundColor: colors.surface, borderColor: colors.surfaceBorder }]} onPress={() => setSelectedPhoto(null)}>
               <X size={26} color={colors.textPrimary} />
             </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.downloadPhotoBtn, { backgroundColor: colors.surface, borderColor: colors.surfaceBorder }]} onPress={handleDownloadPhoto}>
+              <Download size={22} color={colors.textPrimary} />
+            </TouchableOpacity>
             <Image
               source={{ uri: selectedPhoto.image_path }}
               style={[styles.fullSizePhoto, { borderColor: colors.surfaceBorder }]}
               resizeMode="contain"
             />
             <View style={styles.fullPhotoBottomInfo}>
-              <Text style={[styles.fullPhotoDay, { color: colors.warning }]}>Day {selectedPhoto.day_number}</Text>
+              <Text style={[styles.fullPhotoDay, { color: colors.warning }]}>Ngày {selectedPhoto.day_number}</Text>
               <Text style={[styles.fullPhotoDate, { color: colors.textSecondary }]}>{formatDisplayDate(selectedPhoto.checkin_date, 'full')}</Text>
               {selectedPhoto.note ? (
                 <Text style={[styles.fullPhotoNote, { color: colors.textPrimary }]}>{selectedPhoto.note}</Text>
@@ -356,13 +393,6 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 2,
   },
-  topAccent: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 4,
-  },
   typeBadgeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -407,6 +437,14 @@ const styles = StyleSheet.create({
   heroReminder: {
     fontSize: 14,
     fontFamily: THEME.typography.body.fontFamily,
+    marginBottom: 8,
+  },
+  heroNotes: {
+    fontSize: 14,
+    fontFamily: THEME.typography.body.fontFamily,
+    fontStyle: 'italic',
+    padding: 12,
+    borderRadius: THEME.radius.md,
     marginBottom: THEME.spacing.lg,
   },
   statsRow: {
@@ -467,6 +505,12 @@ const styles = StyleSheet.create({
   },
   sectionContainer: {
     marginVertical: THEME.spacing.md,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
   },
   sectionTitle: {
     fontSize: 11,
@@ -574,3 +618,4 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   }
 });
+

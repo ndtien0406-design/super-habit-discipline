@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useColorScheme } from 'react-native';
+import { getSetting, setSetting } from '../database/queries.js';
 
 const lightColors = {
   // Backgrounds
@@ -96,6 +97,12 @@ export const THEME = {
     { name: 'Red', hex: '#D32F2F' },
     { name: 'Teal', hex: '#008080' },
     { name: 'Slate', hex: '#708090' },
+    { name: 'Pink', hex: '#F48FB1' },
+    { name: 'Mint', hex: '#A5D6A7' },
+    { name: 'Purple', hex: '#CE93D8' },
+    { name: 'Peach', hex: '#FFCCBC' },
+    { name: 'Indigo', hex: '#5C6BC0' },
+    { name: 'Lime', hex: '#D4E157' }
   ],
 
   spacing: {
@@ -131,11 +138,37 @@ const ThemeContext = createContext({
   isDark: false,
   colors: lightColors,
   THEME: THEME,
+  themePreference: 'system',
+  updateThemePreference: async (pref) => {},
 });
 
 export const ThemeProvider = ({ children }) => {
   const systemColorScheme = useColorScheme();
-  const isDark = systemColorScheme === 'dark';
+  const [themePreference, setThemePreference] = useState('system');
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    async function loadTheme() {
+      try {
+        const savedPref = await getSetting('theme_preference', 'system');
+        setThemePreference(savedPref);
+      } catch (e) {
+        console.error("Error loading theme", e);
+      } finally {
+        setIsReady(true);
+      }
+    }
+    loadTheme();
+  }, []);
+
+  const updateThemePreference = async (newPref) => {
+    setThemePreference(newPref);
+    await setSetting('theme_preference', newPref);
+  };
+
+  let isDark = systemColorScheme === 'dark';
+  if (themePreference === 'dark') isDark = true;
+  if (themePreference === 'light') isDark = false;
 
   const currentColors = isDark ? darkColors : lightColors;
   
@@ -147,8 +180,8 @@ export const ThemeProvider = ({ children }) => {
   };
 
   return (
-    <ThemeContext.Provider value={{ isDark, colors: currentColors, THEME: currentTheme }}>
-      {children}
+    <ThemeContext.Provider value={{ isDark, colors: currentColors, THEME: currentTheme, themePreference, updateThemePreference }}>
+      {isReady ? children : null}
     </ThemeContext.Provider>
   );
 };

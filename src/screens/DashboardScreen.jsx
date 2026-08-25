@@ -13,9 +13,9 @@ import {
   Platform
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Plus, Cloud, Settings, Flame, Shield, Trophy, Sparkles, CheckCircle2 } from 'lucide-react-native';
-import { useAppTheme } from '../theme/index.js';
-import { getEnrichedHabitsList, deleteHabit } from '../database/queries.js';
+import { Plus, Cloud, Settings, Flame, Shield, Trophy, CheckCircle2, BarChart2 } from 'lucide-react-native';
+import { useAppTheme, THEME } from '../theme/index.js';
+import { getEnrichedHabitsList, deleteHabit, getAllSettings } from '../database/queries.js';
 import { SwipeableHabitCard, CARD_WIDTH } from '../components/SwipeableHabitCard.jsx';
 import { MilestoneModal } from '../components/MilestoneModal.jsx';
 import { NotionConfigModal } from '../components/NotionConfigModal.jsx';
@@ -33,6 +33,12 @@ export function DashboardScreen({ navigation, route }) {
   // Modals state
   const [notionModalVisible, setNotionModalVisible] = useState(false);
   const [milestoneData, setMilestoneData] = useState(null);
+  
+  // Gamification state
+  const [userProfile, setUserProfile] = useState({ level: 1, exp: 0, hp: 100, maxHp: 100 });
+  
+  // Filter state
+  const [selectedTag, setSelectedTag] = useState('All');
 
   const { THEME, colors, isDark } = useAppTheme();
 
@@ -42,6 +48,15 @@ export function DashboardScreen({ navigation, route }) {
     try {
       const list = await getEnrichedHabitsList(today);
       setHabits(list);
+      
+      const settings = await getAllSettings();
+      setUserProfile({
+        level: parseInt(settings.user_level || '1', 10),
+        exp: parseInt(settings.user_exp || '0', 10),
+        hp: parseInt(settings.user_hp || '100', 10),
+        maxHp: parseInt(settings.user_max_hp || '100', 10),
+      });
+
       await updateHabitWidget();
     } catch (e) {
       console.error('[Dashboard] Error loading habits:', e);
@@ -90,7 +105,7 @@ export function DashboardScreen({ navigation, route }) {
 
   const handleCardLongPress = (habit) => {
     if (Platform.OS === 'web') {
-      const confirmed = window.confirm(`Do you want to delete the habit "${habit.title}"?`);
+      const confirmed = window.confirm(`Bạn có chắc chắn muốn xóa thói quen "${habit.title}"?`);
       if (confirmed) {
         deleteHabit(habit.id).then(() => {
           updateHabitWidget();
@@ -101,12 +116,12 @@ export function DashboardScreen({ navigation, route }) {
     }
 
     Alert.alert(
-      'Delete Habit',
-      `Do you want to delete the habit "${habit.title}"?`,
+      'Xóa Thói Quen',
+      `Bạn có chắc chắn muốn xóa thói quen "${habit.title}"?`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: 'Hủy', style: 'cancel' },
         { 
-          text: 'Delete', 
+          text: 'Xóa', 
           style: 'destructive',
           onPress: async () => {
             await deleteHabit(habit.id);
@@ -118,10 +133,15 @@ export function DashboardScreen({ navigation, route }) {
     );
   };
 
-  // Quick stats calculations
   const totalHabits = habits.length;
   const completedTodayCount = habits.filter(h => h.isTodayCompleted).length;
   const bestOverallStreak = habits.reduce((max, h) => Math.max(max, h.bestStreak || 0), 0);
+
+  // Extract unique tags
+  const tags = ['All', ...new Set(habits.map(h => h.tag).filter(t => t && t.trim() !== ''))];
+  
+  // Filtered habits
+  const filteredHabits = selectedTag === 'All' ? habits : habits.filter(h => h.tag === selectedTag);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
@@ -134,13 +154,22 @@ export function DashboardScreen({ navigation, route }) {
             <View style={[styles.logoBadge, { backgroundColor: colors.primary }]}>
               <Flame size={16} color={isDark ? '#000' : '#FFF'} />
             </View>
-            <Text style={[styles.headerAppTitle, { color: colors.textPrimary }]}>SUPER CLIENT</Text>
+            <TouchableOpacity onPress={() => setMilestoneData({ streak: 21, title: 'Thử Nghiệm Hiệu Ứng' })}>
+              <Text style={[styles.headerAppTitle, { color: colors.textPrimary }]}>SUPER CLIENT</Text>
+            </TouchableOpacity>
           </View>
           <Text style={[styles.dateSubtitle, { color: colors.textMuted }]}>{formatDisplayDate(today, 'full')}</Text>
         </View>
 
         {/* Header Right Action Icons */}
         <View style={styles.headerIconsRow}>
+          <TouchableOpacity
+            style={[styles.iconButton, { backgroundColor: colors.surface, borderColor: colors.surfaceBorder }]}
+            onPress={() => navigation.navigate('Analytics')}
+          >
+            <BarChart2 size={20} color={colors.primary} />
+          </TouchableOpacity>
+
           <TouchableOpacity
             style={[styles.iconButton, { backgroundColor: colors.surface, borderColor: colors.surfaceBorder }]}
             onPress={() => setNotionModalVisible(true)}
@@ -160,62 +189,82 @@ export function DashboardScreen({ navigation, route }) {
       {/* Overview Quick Stats Bar */}
       <View style={[styles.quickStatsContainer, { backgroundColor: colors.surface }]}>
         <View style={styles.quickStatBox}>
-          <Text style={[styles.quickStatLabel, { color: colors.textMuted }]}>TODAY'S PROGRESS</Text>
+          <Text style={[styles.quickStatLabel, { color: colors.textMuted }]}>TIẾN ĐỘ HÔM NAY</Text>
           <Text style={[styles.quickStatValue, { color: colors.success }]}>
             {completedTodayCount}/{totalHabits}
           </Text>
         </View>
         <View style={[styles.quickStatDivider, { backgroundColor: colors.surfaceBorder }]} />
         <View style={styles.quickStatBox}>
-          <Text style={[styles.quickStatLabel, { color: colors.textMuted }]}>ACTIVE HABITS</Text>
+          <Text style={[styles.quickStatLabel, { color: colors.textMuted }]}>ĐANG THEO DÕI</Text>
           <Text style={[styles.quickStatValue, { color: colors.textPrimary }]}>
             {totalHabits}
           </Text>
         </View>
         <View style={[styles.quickStatDivider, { backgroundColor: colors.surfaceBorder }]} />
         <View style={styles.quickStatBox}>
-          <Text style={[styles.quickStatLabel, { color: colors.textMuted }]}>BEST STREAK</Text>
+          <Text style={[styles.quickStatLabel, { color: colors.textMuted }]}>KỶ LỤC DÀI NHẤT</Text>
           <Text style={[styles.quickStatValue, { color: colors.warning }]}>
-            {bestOverallStreak}d
+            {bestOverallStreak} ngày
           </Text>
         </View>
       </View>
+
+      {/* Tags Filter ScrollView */}
+      {tags.length > 1 && (
+        <View style={styles.tagsContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tagsScroll}>
+            {tags.map(tag => {
+              const isSelected = selectedTag === tag;
+              return (
+                <TouchableOpacity
+                  key={tag}
+                  style={[
+                    styles.tagChip,
+                    { backgroundColor: isSelected ? colors.primary : colors.surface, borderColor: isSelected ? colors.primary : colors.surfaceBorder }
+                  ]}
+                  onPress={() => setSelectedTag(tag)}
+                >
+                  <Text style={[styles.tagText, { color: isSelected ? '#FFF' : colors.textSecondary }]}>{tag}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      )}
 
       {/* Main Swipeable Habits Cards Carousel */}
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading disciplines...</Text>
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Đang tải dữ liệu...</Text>
         </View>
       ) : habits.length === 0 ? (
         <View style={styles.emptyStateContainer}>
           <View style={[styles.emptyCard, { backgroundColor: colors.surface, borderColor: colors.surfaceBorder }]}>
             <View style={[styles.emptyIconCircle, { backgroundColor: colors.surfaceSubtle, borderColor: colors.surfaceBorder }]}>
-              <Sparkles size={36} color={colors.textPrimary} />
+              <Flame size={36} color={colors.textPrimary} />
             </View>
-            <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>No Habits Yet</Text>
+            <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Chưa có thói quen nào</Text>
             <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
-              Start your journey of discipline by creating a Build or Quit habit.
+              Hãy bắt đầu hành trình kỷ luật bản thân bằng cách tạo một thói quen Xây dựng hoặc Từ bỏ.
             </Text>
             <TouchableOpacity
               style={[styles.emptyAddBtn, { backgroundColor: colors.primary }]}
               onPress={() => navigation.navigate('CreateHabit')}
             >
               <Plus size={18} color={isDark ? '#000' : '#FFF'} />
-              <Text style={[styles.emptyAddText, { color: isDark ? '#000' : '#FFF' }]}>Create First Habit</Text>
+              <Text style={[styles.emptyAddText, { color: isDark ? '#000' : '#FFF' }]}>Tạo thói quen đầu tiên</Text>
             </TouchableOpacity>
           </View>
         </View>
       ) : (
-        <View style={styles.carouselWrapper}>
+        <View style={styles.listWrapper}>
           <FlatList
-            data={habits}
+            data={filteredHabits}
             keyExtractor={(item) => String(item.id)}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            snapToInterval={CARD_WIDTH + 16}
-            decelerationRate="fast"
-            contentContainerStyle={styles.carouselContent}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.listContent}
             renderItem={({ item }) => (
               <SwipeableHabitCard
                 habit={item}
@@ -243,7 +292,7 @@ export function DashboardScreen({ navigation, route }) {
           activeOpacity={0.9}
         >
           <Plus size={24} color={colors.bg} />
-          <Text style={[styles.fabText, { color: colors.bg }]}>Add Habit</Text>
+          <Text style={[styles.fabText, { color: colors.bg }]}>Thêm Thói Quen</Text>
         </TouchableOpacity>
       )}
 
@@ -348,13 +397,30 @@ const styles = StyleSheet.create({
     width: 1,
     height: 32,
   },
-  carouselWrapper: {
+  listWrapper: {
     flex: 1,
-    justifyContent: 'center',
   },
-  carouselContent: {
-    paddingHorizontal: Math.max(12, ((SCREEN_WIDTH > 440 ? 440 : SCREEN_WIDTH) - CARD_WIDTH) / 2 - 8),
-    alignItems: 'center',
+  tagsContainer: {
+    marginBottom: THEME.spacing.sm,
+  },
+  tagsScroll: {
+    paddingHorizontal: THEME.spacing.lg,
+    gap: 8,
+  },
+  tagChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: THEME.radius.full,
+    borderWidth: 1,
+  },
+  tagText: {
+    fontSize: 13,
+    fontFamily: THEME.typography.bodyBold.fontFamily,
+  },
+  listContent: {
+    paddingHorizontal: THEME.spacing.md,
+    paddingBottom: 120,
+    alignItems: 'stretch',
   },
   loadingContainer: {
     flex: 1,
@@ -437,3 +503,4 @@ const styles = StyleSheet.create({
     fontWeight: THEME.typography.bodyBold.fontWeight,
   },
 });
+

@@ -16,18 +16,22 @@ import {
   Snowflake,
   Shield,
   Smartphone,
-  Database,
   ExternalLink,
-  ChevronRight
+  ChevronRight,
+  Sun,
+  Moon,
+  Monitor,
+  Database
 } from 'lucide-react-native';
 import * as Notifications from 'expo-notifications';
-import { useAppTheme } from '../theme/index.js';
+import { useAppTheme, THEME } from '../theme/index.js';
 import { NotionConfigModal } from '../components/NotionConfigModal.jsx';
 import { getCurrentMonthKey } from '../utils/dateHelper.js';
 import { updateHabitWidget } from '../services/widgetService.js';
+import { exportDataToJSON, importDataFromJSON } from '../services/backupService.js';
 
 export function SettingsScreen({ navigation }) {
-  const { THEME, colors, isDark } = useAppTheme();
+  const { THEME, colors, isDark, themePreference, updateThemePreference } = useAppTheme();
   
   const [notionModalVisible, setNotionModalVisible] = useState(false);
   const currentMonth = getCurrentMonthKey();
@@ -36,22 +40,46 @@ export function SettingsScreen({ navigation }) {
     try {
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: '🔥 Discipline Reminder Test',
-          body: 'Notification is working perfectly! Don\'t forget to check in to keep your streak alive.',
+          title: '🔥 Thử Nghiệm Nhắc Nhở Kỷ Luật',
+          body: 'Thông báo hoạt động hoàn hảo! Đừng quên điểm danh để giữ vững kỷ lục nhé.',
           data: { test: true },
           color: '#6366F1',
         },
         trigger: null, // trigger immediately
       });
-      Alert.alert('Success', 'Test notification sent to device!');
+      Alert.alert('Thành công', 'Đã gửi thông báo thử nghiệm đến thiết bị!');
     } catch (e) {
-      Alert.alert('Notification Error', e.message);
+      Alert.alert('Lỗi Thông Báo', e.message);
     }
   };
 
   const handleRefreshWidget = async () => {
     await updateHabitWidget();
-    Alert.alert('Widget Updated', 'Latest data has been synced to the Android Home Screen Widget (Jetpack Glance).');
+    Alert.alert('Đã Cập Nhật Widget', 'Dữ liệu mới nhất đã được đồng bộ lên Widget trên màn hình chính Android (Jetpack Glance).');
+  };
+
+  const handleExport = async () => {
+    try {
+      await exportDataToJSON();
+    } catch (e) {
+      Alert.alert('Lỗi', e.message);
+    }
+  };
+
+  const handleImport = async () => {
+    Alert.alert('Cảnh Báo', 'Việc phục hồi dữ liệu sẽ GHI ĐÈ toàn bộ dữ liệu hiện tại. Bạn có chắc chắn muốn tiếp tục?', [
+      { text: 'Hủy', style: 'cancel' },
+      { text: 'Tiếp Tục', style: 'destructive', onPress: async () => {
+        try {
+          const success = await importDataFromJSON();
+          if (success) {
+            Alert.alert('Thành Công', 'Đã phục hồi dữ liệu. Khởi động lại ứng dụng hoặc tải lại để thấy thay đổi.');
+          }
+        } catch (e) {
+          Alert.alert('Lỗi', e.message);
+        }
+      }}
+    ]);
   };
 
   return (
@@ -61,7 +89,7 @@ export function SettingsScreen({ navigation }) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
           <ArrowLeft size={22} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Settings & Sync</Text>
+        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Cài Đặt & Đồng Bộ</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -73,16 +101,16 @@ export function SettingsScreen({ navigation }) {
         >
           <View style={styles.architectureHeader}>
             <Shield size={22} color={colors.primary} />
-            <Text style={[styles.architectureTitle, { color: colors.textPrimary }]}>Super Client Architecture (V4)</Text>
+            <Text style={[styles.architectureTitle, { color: colors.textPrimary }]}>Kiến Trúc Super Client (V4)</Text>
           </View>
           <Text style={[styles.architectureDesc, { color: colors.textSecondary }]}>
-            100% Offline-First. All check-in logic, streak calculation, video recap rendering using device CPU, and direct Notion API sync from phone — no intermediary servers.
+            100% Ưu Tiên Ngoại Tuyến. Toàn bộ logic điểm danh, tính toán kỷ lục, render video bằng CPU thiết bị và đồng bộ Notion API trực tiếp từ điện thoại — không qua máy chủ trung gian.
           </Text>
         </LinearGradient>
 
         {/* Section 1: Notion Cloud Sync */}
         <View style={styles.section}>
-          <Text style={[styles.sectionHeader, { color: colors.textMuted }]}>CLOUD SYNC (NOTION API)</Text>
+          <Text style={[styles.sectionHeader, { color: colors.textMuted }]}>ĐỒNG BỘ ĐÁM MÂY (NOTION API)</Text>
           
           <TouchableOpacity
             style={[styles.settingItem, { backgroundColor: colors.surface, borderColor: colors.surfaceBorder }]}
@@ -94,31 +122,65 @@ export function SettingsScreen({ navigation }) {
                 <Cloud size={20} color={colors.primary} />
               </View>
               <View>
-                <Text style={[styles.settingItemTitle, { color: colors.textPrimary }]}>Notion Config & Sync</Text>
-                <Text style={[styles.settingItemSubtitle, { color: colors.textSecondary }]}>Automatically push notes and journals to Notion Database</Text>
+                <Text style={[styles.settingItemTitle, { color: colors.textPrimary }]}>Cấu Hình & Đồng Bộ Notion</Text>
+                <Text style={[styles.settingItemSubtitle, { color: colors.textSecondary }]}>Tự động đẩy ghi chú và nhật ký lên Database của Notion</Text>
               </View>
             </View>
             <ChevronRight size={18} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
 
+        {/* Section: GIAO DIỆN (THEME) */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionHeader, { color: colors.textMuted }]}>GIAO DIỆN HIỂN THỊ</Text>
+          <View style={[styles.themeToggleContainer, { backgroundColor: colors.surface, borderColor: colors.surfaceBorder }]}>
+            <TouchableOpacity
+              style={[styles.themeOption, themePreference === 'light' && { backgroundColor: colors.primaryGlow }]}
+              onPress={() => updateThemePreference('light')}
+            >
+              <Sun size={20} color={themePreference === 'light' ? colors.primary : colors.textMuted} />
+              <Text style={[styles.themeOptionText, { color: themePreference === 'light' ? colors.primary : colors.textMuted }]}>Sáng</Text>
+            </TouchableOpacity>
+
+            <View style={[styles.themeDivider, { backgroundColor: colors.surfaceBorder }]} />
+
+            <TouchableOpacity
+              style={[styles.themeOption, themePreference === 'dark' && { backgroundColor: colors.primaryGlow }]}
+              onPress={() => updateThemePreference('dark')}
+            >
+              <Moon size={20} color={themePreference === 'dark' ? colors.primary : colors.textMuted} />
+              <Text style={[styles.themeOptionText, { color: themePreference === 'dark' ? colors.primary : colors.textMuted }]}>Tối</Text>
+            </TouchableOpacity>
+
+            <View style={[styles.themeDivider, { backgroundColor: colors.surfaceBorder }]} />
+
+            <TouchableOpacity
+              style={[styles.themeOption, themePreference === 'system' && { backgroundColor: colors.primaryGlow }]}
+              onPress={() => updateThemePreference('system')}
+            >
+              <Monitor size={20} color={themePreference === 'system' ? colors.primary : colors.textMuted} />
+              <Text style={[styles.themeOptionText, { color: themePreference === 'system' ? colors.primary : colors.textMuted }]}>Tự động</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {/* Section 2: Freeze Quota System */}
         <View style={styles.section}>
-          <Text style={[styles.sectionHeader, { color: colors.textMuted }]}>FREEZE CARD MECHANISM</Text>
+          <Text style={[styles.sectionHeader, { color: colors.textMuted }]}>CƠ CHẾ THẺ BỎ QUA</Text>
           <View style={[styles.infoCard, { backgroundColor: colors.surface, borderColor: colors.surfaceBorder }]}>
             <View style={styles.infoCardHeader}>
               <Snowflake size={18} color={colors.freeze} />
-              <Text style={[styles.infoCardTitle, { color: colors.textPrimary }]}>Limit: 3 Times / Month / Habit</Text>
+              <Text style={[styles.infoCardTitle, { color: colors.textPrimary }]}>Giới hạn: 3 Lần / Tháng / Thói Quen</Text>
             </View>
             <Text style={[styles.infoCardDesc, { color: colors.textSecondary }]}>
-              Each habit can miss check-ins up to 3 times in the current month ({currentMonth}) without losing the streak. The 4th miss will be counted as Failed and the streak will reset to 0. Quota automatically refills 3 times on the 1st of every month.
+              Mỗi thói quen được phép bỏ qua tối đa 3 lần trong tháng hiện tại ({currentMonth}) mà không mất kỷ lục. Lần bỏ qua thứ 4 sẽ bị tính là Thất Bại và kỷ lục sẽ về 0. Hạn mức tự động làm mới 3 lần vào ngày mùng 1 hàng tháng.
             </Text>
           </View>
         </View>
 
         {/* Section 3: Notifications & Widget */}
         <View style={styles.section}>
-          <Text style={[styles.sectionHeader, { color: colors.textMuted }]}>NOTIFICATIONS & HOME SCREEN WIDGET</Text>
+          <Text style={[styles.sectionHeader, { color: colors.textMuted }]}>THÔNG BÁO & WIDGET MÀN HÌNH CHÍNH</Text>
 
           <TouchableOpacity
             style={[styles.settingItem, { backgroundColor: colors.surface, borderColor: colors.surfaceBorder }]}
@@ -130,8 +192,8 @@ export function SettingsScreen({ navigation }) {
                 <Bell size={20} color={colors.warning} />
               </View>
               <View>
-                <Text style={[styles.settingItemTitle, { color: colors.textPrimary }]}>Send Test Notification</Text>
-                <Text style={[styles.settingItemSubtitle, { color: colors.textSecondary }]}>Test sound & notification channels</Text>
+                <Text style={[styles.settingItemTitle, { color: colors.textPrimary }]}>Gửi Thông Báo Thử Nghiệm</Text>
+                <Text style={[styles.settingItemSubtitle, { color: colors.textSecondary }]}>Kiểm tra âm thanh & các kênh thông báo</Text>
               </View>
             </View>
             <ChevronRight size={18} color={colors.textMuted} />
@@ -147,24 +209,59 @@ export function SettingsScreen({ navigation }) {
                 <Smartphone size={20} color={colors.success} />
               </View>
               <View>
-                <Text style={[styles.settingItemTitle, { color: colors.textPrimary }]}>Sync Jetpack Glance Widget</Text>
-                <Text style={[styles.settingItemSubtitle, { color: colors.textSecondary }]}>Update widget grid data on Android Home</Text>
+                <Text style={[styles.settingItemTitle, { color: colors.textPrimary }]}>Đồng Bộ Widget Jetpack Glance</Text>
+                <Text style={[styles.settingItemSubtitle, { color: colors.textSecondary }]}>Cập nhật dữ liệu widget trên màn hình chính Android</Text>
               </View>
             </View>
             <ChevronRight size={18} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
 
-        {/* Section 4: Local Database */}
+        {/* Section 4: Local Database & Backup */}
         <View style={styles.section}>
-          <Text style={[styles.sectionHeader, { color: colors.textMuted }]}>LOCAL DATABASE</Text>
-          <View style={[styles.infoCard, { backgroundColor: colors.surface, borderColor: colors.surfaceBorder }]}>
+          <Text style={[styles.sectionHeader, { color: colors.textMuted }]}>SAO LƯU & CƠ SỞ DỮ LIỆU</Text>
+
+          <TouchableOpacity
+            style={[styles.settingItem, { backgroundColor: colors.surface, borderColor: colors.surfaceBorder }]}
+            onPress={handleExport}
+            activeOpacity={0.8}
+          >
+            <View style={styles.settingItemLeft}>
+              <View style={[styles.iconBadge, { backgroundColor: `${colors.primary}20` }]}>
+                <Cloud size={20} color={colors.primary} />
+              </View>
+              <View>
+                <Text style={[styles.settingItemTitle, { color: colors.textPrimary }]}>Sao Lưu Dữ Liệu (Export)</Text>
+                <Text style={[styles.settingItemSubtitle, { color: colors.textSecondary }]}>Xuất toàn bộ dữ liệu ra file JSON an toàn</Text>
+              </View>
+            </View>
+            <ChevronRight size={18} color={colors.textMuted} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.settingItem, { backgroundColor: colors.surface, borderColor: colors.surfaceBorder }]}
+            onPress={handleImport}
+            activeOpacity={0.8}
+          >
+            <View style={styles.settingItemLeft}>
+              <View style={[styles.iconBadge, { backgroundColor: `${colors.danger}20` }]}>
+                <Database size={20} color={colors.danger} />
+              </View>
+              <View>
+                <Text style={[styles.settingItemTitle, { color: colors.textPrimary }]}>Phục Hồi Dữ Liệu (Import)</Text>
+                <Text style={[styles.settingItemSubtitle, { color: colors.textSecondary }]}>Ghi đè bằng file JSON đã sao lưu</Text>
+              </View>
+            </View>
+            <ChevronRight size={18} color={colors.textMuted} />
+          </TouchableOpacity>
+
+          <View style={[styles.infoCard, { backgroundColor: colors.surface, borderColor: colors.surfaceBorder, marginTop: 8 }]}>
             <View style={styles.infoCardHeader}>
-              <Database size={18} color={colors.textSecondary} />
-              <Text style={[styles.infoCardTitle, { color: colors.textPrimary }]}>SQLite Local Engine (expo-sqlite)</Text>
+              <Shield size={18} color={colors.textSecondary} />
+              <Text style={[styles.infoCardTitle, { color: colors.textPrimary }]}>Động cơ SQLite an toàn</Text>
             </View>
             <Text style={[styles.infoCardDesc, { color: colors.textSecondary }]}>
-              All habit data, check-in history, and watermarked photos are securely stored in your device's memory.
+              Tất cả dữ liệu thói quen, lịch sử điểm danh và ảnh có watermark được lưu trữ an toàn trong bộ nhớ thiết bị của bạn.
             </Text>
           </View>
         </View>
@@ -283,4 +380,27 @@ const styles = StyleSheet.create({
     fontFamily: THEME.typography.body.fontFamily,
     lineHeight: 18,
   },
+  themeToggleContainer: {
+    flexDirection: 'row',
+    borderRadius: THEME.radius.md,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  themeOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    gap: 8,
+  },
+  themeOptionText: {
+    fontSize: 13,
+    fontFamily: THEME.typography.bodyBold.fontFamily,
+  },
+  themeDivider: {
+    width: 1,
+    height: '100%',
+  },
 });
+

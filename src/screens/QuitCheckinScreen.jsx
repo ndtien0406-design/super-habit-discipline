@@ -2,18 +2,18 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ActivityIndicator, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ShieldCheck, ArrowLeft, Heart, Flame, Sparkles, Check, Smile, BatteryCharging, Zap } from 'lucide-react-native';
-import { useAppTheme } from '../theme/index.js';
+import { useAppTheme, THEME } from '../theme/index.js';
 import { getTodayDateString, formatDisplayDate } from '../utils/dateHelper.js';
-import { insertOrUpdateCheckin } from '../database/queries.js';
+import { insertOrUpdateCheckin, getCheckinByHabitAndDate, addExp } from '../database/queries.js';
 import { updateHabitWidget } from '../services/widgetService.js';
 import { isMilestone } from '../utils/streakEngine.js';
 
 const MOOD_TAGS = [
-  { label: '💪 Steadfast', value: 'Steadfast' },
-  { label: '🧘 Calm', value: 'Calm' },
-  { label: '🛡️ Resisted', value: 'Resisted' },
-  { label: '⚡ Energetic', value: 'Energetic' },
-  { label: '🎯 Focused', value: 'Focused' },
+  { label: '💪 Vững vàng', value: 'Steadfast' },
+  { label: '🧘 Bình tĩnh', value: 'Calm' },
+  { label: '🛡️ Đã kháng cự', value: 'Resisted' },
+  { label: '⚡ Năng lượng', value: 'Energetic' },
+  { label: '🎯 Tập trung', value: 'Focused' },
 ];
 
 export function QuitCheckinScreen({ route, navigation }) {
@@ -35,6 +35,9 @@ export function QuitCheckinScreen({ route, navigation }) {
         ? `[Mood: ${selectedTag}]\n${note.trim()}`
         : note.trim();
 
+      // Check if already checked in today
+      const existing = await getCheckinByHabitAndDate(habit.id, today);
+
       // 1. Insert checkin record into SQLite (image_path is NULL for quit habits)
       await insertOrUpdateCheckin({
         habit_id: habit.id,
@@ -44,6 +47,12 @@ export function QuitCheckinScreen({ route, navigation }) {
         day_number: nextDayNumber,
         status: 'completed',
       });
+
+      if (!existing) {
+        // Award EXP for completing checkin
+        const { exp, level } = await addExp(10);
+        console.log(`[Gamification] Gained 10 EXP. Current Level: ${level}, EXP: ${exp}`);
+      }
 
       // 2. Update Android Widget
       await updateHabitWidget();
@@ -60,7 +69,7 @@ export function QuitCheckinScreen({ route, navigation }) {
       });
     } catch (error) {
       setIsSaving(false);
-      Alert.alert('Check-in Error', error.message);
+      Alert.alert('Lỗi Điểm Danh', error.message);
     }
   };
 
@@ -71,7 +80,7 @@ export function QuitCheckinScreen({ route, navigation }) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
           <ArrowLeft size={22} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Confirm Discipline (Quit)</Text>
+        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Xác Nhận Kỷ Luật (Từ Bỏ)</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -91,14 +100,14 @@ export function QuitCheckinScreen({ route, navigation }) {
           <View style={styles.streakBadge}>
             <Flame size={18} color="#F59E0B" />
             <Text style={styles.streakBadgeText}>
-              CONFIRM SURVIVAL DAY {nextDayNumber}
+              XÁC NHẬN VƯỢT QUA NGÀY {nextDayNumber}
             </Text>
           </View>
         </LinearGradient>
 
         {/* Mood Tags */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>TODAY'S MOOD</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>TÂM TRẠNG HÔM NAY</Text>
           <View style={styles.tagGrid}>
             {MOOD_TAGS.map(tag => (
               <TouchableOpacity
@@ -124,13 +133,13 @@ export function QuitCheckinScreen({ route, navigation }) {
 
         {/* Reflection Note */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>TEMPTATION SURVIVAL JOURNAL (OPTIONAL)</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>NHẬT KÝ VƯỢT QUA CÁM DỖ (TÙY CHỌN)</Text>
           <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
-            Record your feelings or challenges you overcame today. This will be synced to Notion.
+            Ghi lại cảm xúc hoặc những cám dỗ bạn đã vượt qua hôm nay. Điều này sẽ được đồng bộ lên Notion.
           </Text>
           <TextInput
             style={[styles.reflectionInput, { backgroundColor: colors.surfaceSubtle, borderColor: colors.surfaceBorder, color: colors.textPrimary }]}
-            placeholder="How did you feel maintaining discipline today? How did you face temptations?..."
+            placeholder="Bạn cảm thấy thế nào khi giữ kỷ luật hôm nay? Bạn đã đối mặt với cám dỗ ra sao?..."
             placeholderTextColor={colors.textMuted}
             value={note}
             onChangeText={setNote}
@@ -157,7 +166,7 @@ export function QuitCheckinScreen({ route, navigation }) {
             ) : (
               <>
                 <ShieldCheck size={22} color="#FFFFFF" />
-                <Text style={styles.survivedButtonText}>I SURVIVED</Text>
+                <Text style={styles.survivedButtonText}>TÔI ĐÃ VƯỢT QUA</Text>
               </>
             )}
           </LinearGradient>
@@ -298,3 +307,4 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 });
+

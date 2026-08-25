@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Modal, TextInput, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Cloud, CheckCircle2, AlertCircle, RefreshCw, X, Shield, ExternalLink } from 'lucide-react-native';
-import { useAppTheme } from '../theme/index.js';
+import { useAppTheme, THEME } from '../theme/index.js';
 import { getSetting, setSetting } from '../database/queries.js';
 import { testNotionConnection, syncCheckinsToNotion } from '../services/notionSync.js';
 
@@ -38,12 +38,12 @@ export function NotionConfigModal({ visible, onClose, onSyncComplete }) {
   const handleSave = async () => {
     await setSetting('notion_token', token.trim());
     await setSetting('notion_database_id', databaseId.trim());
-    Alert.alert('Saved', 'Notion config saved locally on device.');
+    Alert.alert('Đã lưu', 'Cấu hình Notion đã được lưu trên thiết bị.');
   };
 
   const handleTestConnection = async () => {
     if (!token || !databaseId) {
-      Alert.alert('Missing Info', 'Please enter Token and Database ID.');
+      Alert.alert('Thiếu thông tin', 'Vui lòng nhập Token và Database ID.');
       return;
     }
     setIsTesting(true);
@@ -62,17 +62,17 @@ export function NotionConfigModal({ visible, onClose, onSyncComplete }) {
 
   const handleSyncNow = async () => {
     if (!token || !databaseId) {
-      Alert.alert('Not Configured', 'Please test Notion connection before syncing.');
+      Alert.alert('Chưa cấu hình', 'Vui lòng kiểm tra kết nối Notion trước khi đồng bộ.');
       return;
     }
 
     setIsLoading(true);
-    setSyncProgress({ current: 0, total: 0, text: 'Preparing SQLite data...' });
+    setSyncProgress({ current: 0, total: 0, text: 'Đang chuẩn bị dữ liệu SQLite...' });
 
     try {
       const result = await syncCheckinsToNotion({
         onProgress: (cur, tot, itemTitle) => {
-          setSyncProgress({ current: cur, total: tot, text: `Pushing [${cur}/${tot}]: ${itemTitle}` });
+          setSyncProgress({ current: cur, total: tot, text: `Đang đẩy [${cur}/${tot}]: ${itemTitle}` });
         }
       });
 
@@ -80,19 +80,19 @@ export function NotionConfigModal({ visible, onClose, onSyncComplete }) {
 
       if (result.success) {
         Alert.alert(
-          '✅ Sync Successful!',
-          `Successfully pushed ${result.syncedCount} journal records to your Notion Workspace!`
+          '✅ Đồng Bộ Thành Công!',
+          `Đã đẩy thành công ${result.syncedCount} bản ghi nhật ký lên Notion Workspace của bạn!`
         );
         if (onSyncComplete) onSyncComplete();
       } else {
         Alert.alert(
-          'Sync Partially Completed',
-          `Synced ${result.syncedCount} records.\nFailed ${result.errorCount} records:\n${result.errors.slice(0, 3).join('\n')}`
+          'Đồng Bộ Hoàn Thành Một Phần',
+          `Đã đồng bộ ${result.syncedCount} bản ghi.\nThất bại ${result.errorCount} bản ghi:\n${result.errors.slice(0, 3).join('\n')}`
         );
       }
     } catch (err) {
       setIsLoading(false);
-      Alert.alert('Sync Error', err.message);
+      Alert.alert('Lỗi Đồng Bộ', err.message);
     }
   };
 
@@ -107,7 +107,7 @@ export function NotionConfigModal({ visible, onClose, onSyncComplete }) {
             <View style={styles.headerRow}>
               <View style={styles.titleWithIcon}>
                 <Cloud size={20} color={colors.primary} />
-                <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Sync Notion Workspace</Text>
+                <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Đồng Bộ Notion Workspace</Text>
               </View>
               <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
                 <X size={20} color={colors.textSecondary} />
@@ -116,12 +116,12 @@ export function NotionConfigModal({ visible, onClose, onSyncComplete }) {
 
             <ScrollView showsVerticalScrollIndicator={false}>
               <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-                Automatically push all personal discipline notes and journals to your Notion database (Direct Client-to-Cloud).
+                Tự động đẩy toàn bộ ghi chú và nhật ký kỷ luật cá nhân lên database Notion của bạn (Trực tiếp từ ứng dụng lên đám mây).
               </Text>
 
               {/* Form inputs */}
               <View style={styles.formGroup}>
-                <Text style={[styles.inputLabel, { color: colors.textMuted }]}>NOTION INTEGRATION TOKEN</Text>
+                <Text style={[styles.inputLabel, { color: colors.textMuted }]}>TOKEN TÍCH HỢP NOTION</Text>
                 <TextInput
                   style={[styles.input, { backgroundColor: colors.surfaceSubtle, borderColor: colors.surfaceBorder, color: colors.textPrimary }]}
                   placeholder="secret_xxxxxxxxxxxxxxxxxxxxxxxxxx"
@@ -134,7 +134,7 @@ export function NotionConfigModal({ visible, onClose, onSyncComplete }) {
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={[styles.inputLabel, { color: colors.textMuted }]}>NOTION DATABASE ID</Text>
+                <Text style={[styles.inputLabel, { color: colors.textMuted }]}>ID DATABASE NOTION</Text>
                 <TextInput
                   style={[styles.input, { backgroundColor: colors.surfaceSubtle, borderColor: colors.surfaceBorder, color: colors.textPrimary }]}
                   placeholder="32-character Notion Database ID"
@@ -156,7 +156,7 @@ export function NotionConfigModal({ visible, onClose, onSyncComplete }) {
                 ) : (
                   <>
                     <RefreshCw size={15} color={colors.primary} />
-                    <Text style={[styles.testBtnText, { color: colors.primary }]}>Test Database Connection</Text>
+                    <Text style={[styles.testBtnText, { color: colors.primary }]}>Kiểm Tra Kết Nối Database</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -192,7 +192,7 @@ export function NotionConfigModal({ visible, onClose, onSyncComplete }) {
               <View style={[styles.guideBox, { backgroundColor: `${colors.freeze}10`, borderColor: `${colors.freeze}30` }]}>
                 <Shield size={16} color={colors.freeze} />
                 <Text style={[styles.guideText, { color: colors.textSecondary }]}>
-                  Super Client Security: Data is pushed directly from your phone to Notion API, completely bypassing intermediary servers.
+                  Bảo Mật Super Client: Dữ liệu được đẩy trực tiếp từ điện thoại của bạn đến Notion API, hoàn toàn không qua máy chủ trung gian.
                 </Text>
               </View>
 
@@ -203,7 +203,7 @@ export function NotionConfigModal({ visible, onClose, onSyncComplete }) {
                   onPress={handleSave}
                   disabled={isLoading}
                 >
-                  <Text style={[styles.saveBtnText, { color: colors.textPrimary }]}>Save Config</Text>
+                  <Text style={[styles.saveBtnText, { color: colors.textPrimary }]}>Lưu Cấu Hình</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -220,7 +220,7 @@ export function NotionConfigModal({ visible, onClose, onSyncComplete }) {
                     ) : (
                       <>
                         <Cloud size={16} color="#FFFFFF" />
-                        <Text style={styles.syncBtnText}>Sync Now</Text>
+                        <Text style={styles.syncBtnText}>Đồng Bộ Ngay</Text>
                       </>
                     )}
                   </LinearGradient>
@@ -383,3 +383,4 @@ const styles = StyleSheet.create({
     fontFamily: THEME.typography.bodyBold.fontFamily,
   },
 });
+

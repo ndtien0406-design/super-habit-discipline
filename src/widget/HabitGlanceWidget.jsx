@@ -31,7 +31,7 @@ export function HabitGlanceWidget({ habits = [], lastUpdated = '' }) {
         }}
       >
         <TextWidget
-          text="⚡ PERSONAL DISCIPLINE"
+          text="⚡ KỶ LUẬT CÁ NHÂN"
           style={{
             color: '#F8FAFC',
             fontSize: 13,
@@ -39,7 +39,7 @@ export function HabitGlanceWidget({ habits = [], lastUpdated = '' }) {
           }}
         />
         <TextWidget
-          text={lastUpdated ? `Updated ${lastUpdated}` : 'Super Client'}
+          text={lastUpdated ? `Cập nhật ${lastUpdated}` : 'Máy Khách (Super Client)'}
           style={{
             color: '#64748B',
             fontSize: 10,
@@ -67,7 +67,7 @@ export function HabitGlanceWidget({ habits = [], lastUpdated = '' }) {
             }}
           >
             <TextWidget
-              text="No habits yet. Open app to create!"
+              text="Chưa có thói quen. Mở ứng dụng để tạo!"
               style={{
                 color: '#94A3B8',
                 fontSize: 12,
@@ -128,7 +128,7 @@ export function HabitGlanceWidget({ habits = [], lastUpdated = '' }) {
                 }}
               >
                 <TextWidget
-                  text={`🔥 ${habit.streak} days`}
+                  text={`🔥 ${habit.streak} ngày`}
                   style={{
                     color: '#F59E0B',
                     fontSize: 11,
@@ -136,7 +136,7 @@ export function HabitGlanceWidget({ habits = [], lastUpdated = '' }) {
                   }}
                 />
                 <TextWidget
-                  text={habit.isCompleted ? '✓ Done' : 'Pending'}
+                  text={habit.isCompleted ? '✓ Xong' : 'Chờ'}
                   style={{
                     color: habit.isCompleted ? '#10B981' : '#64748B',
                     fontSize: 10,

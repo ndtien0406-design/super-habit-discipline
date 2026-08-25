@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Play, Pause, Download, X, Film, Sparkles } from 'lucide-react-native';
-import { useAppTheme } from '../theme/index.js';
+import { useAppTheme, THEME } from '../theme/index.js';
 import { calculateOptimalFps, renderHabitRecapVideo } from '../services/videoRenderService.js';
 
 export function VideoRecapModal({ visible, habit, images = [], onClose }) {
@@ -31,12 +31,12 @@ export function VideoRecapModal({ visible, habit, images = [], onClose }) {
 
   const handleExport = async () => {
     if (totalImages === 0) {
-      Alert.alert('No Photos', 'At least 1 photo is required to render a recap video.');
+      Alert.alert('Thiếu Ảnh', 'Cần ít nhất 1 ảnh để tạo video tổng kết.');
       return;
     }
 
     setIsExporting(true);
-    setExportProgress({ text: 'Starting render...', percent: 10 });
+    setExportProgress({ text: 'Đang bắt đầu tạo video...', percent: 10 });
 
     try {
       const result = await renderHabitRecapVideo(habit.id, habit.title, {
@@ -45,14 +45,14 @@ export function VideoRecapModal({ visible, habit, images = [], onClose }) {
 
       if (result.success) {
         Alert.alert(
-          '🎉 Export Successful!',
-          `${result.message}\nVideo has been saved to your device Gallery, ready for YouTube Shorts / TikTok.`
+          '🎉 Xuất Thành Công!',
+          `${result.message}\nVideo đã được lưu vào Thư viện của thiết bị, sẵn sàng cho YouTube Shorts / TikTok.`
         );
       } else {
-        Alert.alert('Cannot export video', result.message);
+        Alert.alert('Không thể xuất video', result.message);
       }
     } catch (err) {
-      Alert.alert('Error', err.message);
+      Alert.alert('Lỗi', err.message);
     } finally {
       setIsExporting(false);
     }
@@ -71,7 +71,7 @@ export function VideoRecapModal({ visible, habit, images = [], onClose }) {
             <View style={styles.topBar}>
               <View style={styles.titleRow}>
                 <Film size={18} color={colors.primary} />
-                <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Timelapse Video Recap</Text>
+                <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Tổng Kết Bằng Video Timelapse</Text>
               </View>
               <TouchableOpacity onPress={onClose} style={[styles.closeBtn, { backgroundColor: colors.surfaceSubtle }]}>
                 <X size={20} color={colors.textSecondary} />
@@ -90,14 +90,14 @@ export function VideoRecapModal({ visible, habit, images = [], onClose }) {
                   {/* Overlay Frame Badge */}
                   <View style={[styles.frameBadge, { backgroundColor: isDark ? 'rgba(26,14,2,0.8)' : 'rgba(255,255,255,0.8)', borderColor: colors.surfaceBorder }]}>
                     <Text style={[styles.frameBadgeText, { color: colors.textPrimary }]}>
-                      Day {currentImage.day_number || currentIndex + 1} ({currentIndex + 1}/{totalImages})
+                      Ngày {currentImage.day_number || currentIndex + 1} ({currentIndex + 1}/{totalImages})
                     </Text>
                   </View>
                 </>
               ) : (
                 <View style={styles.emptyContainer}>
                   <Film size={40} color={colors.textMuted} />
-                  <Text style={[styles.emptyText, { color: colors.textMuted }]}>No check-in photos yet.</Text>
+                  <Text style={[styles.emptyText, { color: colors.textMuted }]}>Chưa có ảnh điểm danh nào.</Text>
                 </View>
               )}
             </View>
@@ -105,15 +105,15 @@ export function VideoRecapModal({ visible, habit, images = [], onClose }) {
             {/* Specs Row */}
             <View style={styles.specsRow}>
               <View style={[styles.specBox, { backgroundColor: colors.surfaceSubtle, borderColor: colors.surfaceBorder }]}>
-                <Text style={[styles.specLabel, { color: colors.textMuted }]}>TOTAL PHOTOS</Text>
+                <Text style={[styles.specLabel, { color: colors.textMuted }]}>TỔNG SỐ ẢNH</Text>
                 <Text style={[styles.specVal, { color: colors.textPrimary }]}>{totalImages}</Text>
               </View>
               <View style={[styles.specBox, { backgroundColor: colors.surfaceSubtle, borderColor: colors.surfaceBorder }]}>
-                <Text style={[styles.specLabel, { color: colors.textMuted }]}>FPS RATE</Text>
+                <Text style={[styles.specLabel, { color: colors.textMuted }]}>TỐC ĐỘ (FPS)</Text>
                 <Text style={[styles.specVal, { color: colors.textPrimary }]}>{fps} fps</Text>
               </View>
               <View style={[styles.specBox, { backgroundColor: colors.surfaceSubtle, borderColor: colors.surfaceBorder }]}>
-                <Text style={[styles.specLabel, { color: colors.textMuted }]}>DURATION</Text>
+                <Text style={[styles.specLabel, { color: colors.textMuted }]}>THỜI LƯỢNG</Text>
                 <Text style={[styles.specVal, { color: colors.textPrimary }]}>{duration}s</Text>
               </View>
             </View>
@@ -139,7 +139,7 @@ export function VideoRecapModal({ visible, habit, images = [], onClose }) {
                 ) : (
                   <Play size={18} color={colors.textPrimary} />
                 )}
-                <Text style={[styles.playPauseText, { color: colors.textPrimary }]}>{isPlaying ? 'Pause' : 'Preview'}</Text>
+                <Text style={[styles.playPauseText, { color: colors.textPrimary }]}>{isPlaying ? 'Tạm Dừng' : 'Xem Trước'}</Text>
               </TouchableOpacity>
 
               {/* Export MP4 button */}
@@ -156,7 +156,7 @@ export function VideoRecapModal({ visible, habit, images = [], onClose }) {
                 >
                   <Download size={18} color={isDark ? '#000' : '#FFF'} />
                   <Text style={[styles.exportText, { color: isDark ? '#000' : '#FFF' }]}>
-                    {isExporting ? 'Exporting MP4...' : 'Export Video to Gallery'}
+                    {isExporting ? 'Đang xuất MP4...' : 'Xuất Video Ra Thư Viện'}
                   </Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -311,3 +311,4 @@ const styles = StyleSheet.create({
     fontFamily: THEME.typography.bodyBold.fontFamily,
   },
 });
+

@@ -8,11 +8,17 @@ let dbInstance = null;
 class WebMemoryDatabase {
   constructor() {
     this.habits = [
-      { id: 1, title: 'Morning 5km Run', type: 'build', color_code: '#10B981', reminder_time: '06:00', target_streak: 21, target_type: 'streak', target_date: null, freezes_left: 3, created_at: new Date().toISOString() },
-      { id: 2, title: 'Don\\'t Stay Up Past 23:00', type: 'quit', color_code: '#F59E0B', reminder_time: '22:30', target_streak: 66, target_type: 'streak', target_date: null, freezes_left: 3, created_at: new Date().toISOString() }
+      { id: 1, title: 'Chạy bộ 5km buổi sáng', type: 'build', color_code: '#10B981', reminder_time: '06:00', target_streak: 21, target_type: 'streak', target_date: null, notes: '', tag: 'Sức khỏe', latitude: null, longitude: null, freezes_left: 3, created_at: new Date().toISOString() },
+      { id: 2, title: "Ngủ trước 23:00", type: 'quit', color_code: '#F59E0B', reminder_time: '22:30', target_streak: 66, target_type: 'streak', target_date: null, notes: '', tag: 'Thói quen tốt', latitude: null, longitude: null, freezes_left: 3, created_at: new Date().toISOString() }
     ];
     this.checkins = [];
-    this.settings = {};
+    this.settings = {
+      'user_level': '1',
+      'user_exp': '0',
+      'user_max_hp': '100',
+      'user_hp': '100',
+      'theme_preference': 'system'
+    };
   }
 
   async execAsync(sql) { return; }
@@ -70,6 +76,10 @@ class WebMemoryDatabase {
         target_streak: params[4] || 21,
         target_type: params[5] || 'streak',
         target_date: params[6],
+        notes: params[8] || '',
+        tag: params[9] || '',
+        latitude: params[10] || null,
+        longitude: params[11] || null,
         freezes_left: params[7] || 3,
         created_at: new Date().toISOString()
       });
@@ -162,6 +172,10 @@ export async function initDatabase(db) {
       target_streak INTEGER NOT NULL DEFAULT 21,
       target_type TEXT NOT NULL DEFAULT 'streak',
       target_date TEXT,
+      notes TEXT,
+      tag TEXT,
+      latitude REAL,
+      longitude REAL,
       freezes_left INTEGER NOT NULL DEFAULT 3,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
@@ -204,6 +218,40 @@ export async function initDatabase(db) {
     await db.execAsync("ALTER TABLE habits ADD COLUMN target_date TEXT;");
   } catch (e) {
     // Column might already exist, ignore
+  }
+
+  try {
+    await db.execAsync("ALTER TABLE habits ADD COLUMN notes TEXT;");
+  } catch (e) {
+    // Column might already exist, ignore
+  }
+
+  try {
+    await db.execAsync("ALTER TABLE habits ADD COLUMN tag TEXT;");
+  } catch (e) {
+    // Column might already exist, ignore
+  }
+
+  try {
+    await db.execAsync("ALTER TABLE habits ADD COLUMN latitude REAL;");
+  } catch (e) {
+    // Column might already exist, ignore
+  }
+
+  try {
+    await db.execAsync("ALTER TABLE habits ADD COLUMN longitude REAL;");
+  } catch (e) {
+    // Column might already exist, ignore
+  }
+
+  // Initialize Gamification and Theme settings if missing
+  const checkSetting = await db.getFirstAsync('SELECT value FROM app_settings WHERE key = ?', ['user_level']);
+  if (!checkSetting) {
+    await db.runAsync("INSERT OR IGNORE INTO app_settings (key, value) VALUES ('user_level', '1');");
+    await db.runAsync("INSERT OR IGNORE INTO app_settings (key, value) VALUES ('user_exp', '0');");
+    await db.runAsync("INSERT OR IGNORE INTO app_settings (key, value) VALUES ('user_hp', '100');");
+    await db.runAsync("INSERT OR IGNORE INTO app_settings (key, value) VALUES ('user_max_hp', '100');");
+    await db.runAsync("INSERT OR IGNORE INTO app_settings (key, value) VALUES ('theme_preference', 'system');");
   }
 
   // Check and run monthly freeze reset

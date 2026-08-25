@@ -2,11 +2,12 @@ import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Image, Alert, ActivityIndicator, Dimensions, Platform } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as FileSystem from 'expo-file-system';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Camera, FlipHorizontal, ArrowLeft, Check, Sparkles, AlertCircle, ImagePlus } from 'lucide-react-native';
-import { useAppTheme } from '../theme/index.js';
+import { useAppTheme, THEME } from '../theme/index.js';
 import { getTodayDateString, formatDisplayDate } from '../utils/dateHelper.js';
-import { insertOrUpdateCheckin } from '../database/queries.js';
+import { getCheckinByHabitAndDate, insertOrUpdateCheckin, addExp } from '../database/queries.js';
 import { updateHabitWidget } from '../services/widgetService.js';
 import { isMilestone } from '../utils/streakEngine.js';
 
@@ -40,13 +41,23 @@ export function BuildCheckinScreen({ route, navigation }) {
 
     if (cameraRef.current) {
       try {
-        const photo = await cameraRef.current.takePictureAsync({
+        let photo = await cameraRef.current.takePictureAsync({
           quality: 0.85,
           skipProcessing: false,
         });
+
+        // Lật ngược ảnh (mirror) nếu là camera trước (selfie)
+        if (facing === 'front' && !isWeb) {
+          photo = await ImageManipulator.manipulateAsync(
+            photo.uri,
+            [{ flip: ImageManipulator.FlipType.Horizontal }],
+            { compress: 0.85, format: ImageManipulator.SaveFormat.JPEG }
+          );
+        }
+
         setPhotoUri(photo.uri);
       } catch (e) {
-        Alert.alert('Photo Capture Error', e.message);
+        Alert.alert('Lỗi chụp ảnh', e.message);
       }
     }
   };
@@ -57,7 +68,7 @@ export function BuildCheckinScreen({ route, navigation }) {
 
   const handleSaveCheckin = async () => {
     if (!photoUri) {
-      Alert.alert('No Photo', 'Please take a photo as proof of your habit.');
+      Alert.alert('Thiếu Ảnh', 'Vui lòng chụp ảnh để chứng minh bạn đã hoàn thành thói quen.');
       return;
     }
 
@@ -72,6 +83,9 @@ export function BuildCheckinScreen({ route, navigation }) {
         await FileSystem.copyAsync({ from: photoUri, to: permanentUri });
       }
 
+      // Check if already checked in today
+      const existing = await getCheckinByHabitAndDate(habit.id, today);
+
       // 2. Insert checkin record into SQLite
       await insertOrUpdateCheckin({
         habit_id: habit.id,
@@ -81,6 +95,13 @@ export function BuildCheckinScreen({ route, navigation }) {
         day_number: nextDayNumber,
         status: 'completed',
       });
+
+      if (!existing) {
+        // Award EXP for completing checkin
+        const { exp, level } = await addExp(20);
+        // We could show a toast or alert here, but for now just console.log
+        console.log(`[Gamification] Gained 20 EXP. Current Level: ${level}, EXP: ${exp}`);
+      }
 
       // 3. Update Android Widget
       await updateHabitWidget();
@@ -97,7 +118,7 @@ export function BuildCheckinScreen({ route, navigation }) {
       });
     } catch (error) {
       setIsSaving(false);
-      Alert.alert('Check-in Error', error.message);
+      Alert.alert('Lỗi Điểm Danh', error.message);
     }
   };
 
@@ -113,15 +134,15 @@ export function BuildCheckinScreen({ route, navigation }) {
     return (
       <View style={[styles.permissionContainer, { backgroundColor: colors.bg }]}>
         <AlertCircle size={48} color={colors.warning} />
-        <Text style={[styles.permissionTitle, { color: colors.textPrimary }]}>Camera Permission Required</Text>
+        <Text style={[styles.permissionTitle, { color: colors.textPrimary }]}>Cần Quyền Camera</Text>
         <Text style={[styles.permissionDesc, { color: colors.textSecondary }]}>
-          The app needs camera access to take proof photos and apply the streak watermark.
+          Ứng dụng cần quyền truy cập camera để chụp ảnh chứng minh và thêm watermark chuỗi kỷ lục.
         </Text>
         <TouchableOpacity style={[styles.permissionBtn, { backgroundColor: colors.primary }]} onPress={requestPermission}>
-          <Text style={styles.permissionBtnText}>Grant Camera Access</Text>
+          <Text style={styles.permissionBtnText}>Cấp Quyền Camera</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.backLink} onPress={() => navigation.goBack()}>
-          <Text style={[styles.backLinkText, { color: colors.textMuted }]}>Go Back</Text>
+          <Text style={[styles.backLinkText, { color: colors.textMuted }]}>Quay Lại</Text>
         </TouchableOpacity>
       </View>
     );
@@ -136,7 +157,7 @@ export function BuildCheckinScreen({ route, navigation }) {
         </TouchableOpacity>
         <View style={styles.headerInfo}>
           <Text style={[styles.headerHabitTitle, { color: colors.textPrimary }]} numberOfLines={1}>{habit.title}</Text>
-          <Text style={[styles.headerDayText, { color: colors.textSecondary }]}>Check-in Day {nextDayNumber} (Build)</Text>
+          <Text style={[styles.headerDayText, { color: colors.textSecondary }]}>Điểm Danh Ngày {nextDayNumber} (Xây Dựng)</Text>
         </View>
         <View style={{ width: 40 }} />
       </View>
@@ -147,13 +168,13 @@ export function BuildCheckinScreen({ route, navigation }) {
           isWeb ? (
             <View style={[styles.webCameraMock, { backgroundColor: colors.surfaceSubtle }]}>
               <Camera size={56} color={habitColor} />
-              <Text style={[styles.webMockTitle, { color: colors.textPrimary }]}>Web Camera Simulator</Text>
+              <Text style={[styles.webMockTitle, { color: colors.textPrimary }]}>Trình Giả Lập Camera</Text>
               <Text style={[styles.webMockDesc, { color: colors.textSecondary }]}>
-                Click the capture button below to take a sample photo and preview the streak watermark effect!
+                Nhấn nút chụp bên dưới để chụp ảnh mẫu và xem trước hiệu ứng watermark chuỗi kỷ lục!
               </Text>
               <TouchableOpacity style={[styles.webCaptureBtn, { backgroundColor: habitColor }]} onPress={handleTakePhoto}>
                 <Camera size={20} color="#FFFFFF" />
-                <Text style={styles.webCaptureBtnText}>Capture Proof</Text>
+                <Text style={styles.webCaptureBtnText}>Chụp Ảnh</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -161,7 +182,7 @@ export function BuildCheckinScreen({ route, navigation }) {
               <View style={styles.cameraOverlay}>
                 <View style={styles.cameraHeaderNotice}>
                   <Text style={styles.cameraNoticeText}>
-                    📸 Today's Proof Photo ({formatDisplayDate(today, 'short')})
+                    📸 Ảnh Chứng Minh Hôm Nay ({formatDisplayDate(today, 'short')})
                   </Text>
                 </View>
 
@@ -194,7 +215,7 @@ export function BuildCheckinScreen({ route, navigation }) {
               <View style={styles.watermarkTopBadge}>
                 <Sparkles size={14} color="#F59E0B" />
                 <Text style={styles.watermarkDayHighlight}>
-                  DAY {nextDayNumber}
+                  NGÀY {nextDayNumber}
                 </Text>
               </View>
               <Text style={styles.watermarkHabitName}>{habit.title}</Text>
@@ -211,7 +232,7 @@ export function BuildCheckinScreen({ route, navigation }) {
         <View style={[styles.bottomPanel, { backgroundColor: colors.surface, borderTopColor: colors.surfaceBorder }]}>
           <TextInput
             style={[styles.noteInput, { backgroundColor: colors.surfaceSubtle, borderColor: colors.surfaceBorder, color: colors.textPrimary }]}
-            placeholder="Add note/feeling for today (optional)..."
+            placeholder="Thêm ghi chú/cảm nghĩ hôm nay (tùy chọn)..."
             placeholderTextColor={colors.textMuted}
             value={note}
             onChangeText={setNote}
@@ -225,7 +246,7 @@ export function BuildCheckinScreen({ route, navigation }) {
               onPress={handleRetake}
               disabled={isSaving}
             >
-              <Text style={[styles.retakeText, { color: colors.textSecondary }]}>Retake</Text>
+              <Text style={[styles.retakeText, { color: colors.textSecondary }]}>Chụp Lại</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -242,7 +263,7 @@ export function BuildCheckinScreen({ route, navigation }) {
                 ) : (
                   <>
                     <Check size={18} color="#FFFFFF" />
-                    <Text style={styles.saveButtonText}>Save & Complete</Text>
+                    <Text style={styles.saveButtonText}>Lưu & Hoàn Thành</Text>
                   </>
                 )}
               </LinearGradient>
@@ -507,3 +528,4 @@ const styles = StyleSheet.create({
     fontFamily: THEME.typography.bodyBold.fontFamily,
   },
 });
+

@@ -68,34 +68,40 @@ export async function scheduleHabitReminder(habit) {
     // First cancel any existing scheduled notification for this habit
     await cancelHabitReminder(habit.id);
 
-    const [hourStr, minStr] = habit.reminder_time.split(':');
-    const hour = parseInt(hourStr, 10) || 8;
-    const minute = parseInt(minStr, 10) || 0;
+    const times = habit.reminder_time.split(',').map(t => t.trim()).filter(Boolean);
+    const identifiers = [];
 
-    const identifier = `habit_reminder_${habit.id}`;
-    const habitTypeLabel = habit.type === 'build' ? '📸 Discipline Photo' : '🛡️ Overcome Temptation';
+    for (let i = 0; i < times.length; i++) {
+      const [hourStr, minStr] = times[i].split(':');
+      const hour = parseInt(hourStr, 10) || 8;
+      const minute = parseInt(minStr, 10) || 0;
 
-    const trigger = {
-      type: Notifications.SchedulableTriggerInputTypes.DAILY,
-      hour,
-      minute,
-      channelId: 'habit-discipline-reminders'
-    };
+      const identifier = `habit_reminder_${habit.id}_${i}`;
+      const habitTypeLabel = habit.type === 'build' ? '📸 Chụp Ảnh' : '🛡️ Đã Vượt Qua';
 
-    await Notifications.scheduleNotificationAsync({
-      identifier,
-      content: {
-        title: `🔥 Discipline: ${habit.title}`,
-        body: `Time to check-in [${habitTypeLabel}]! Keep your streak alive today.`,
-        data: { habitId: habit.id, type: habit.type },
-        sound: true,
-        priority: Notifications.AndroidNotificationPriority.HIGH,
-        color: habit.color_code || '#6366F1',
-      },
-      trigger,
-    });
+      const trigger = {
+        type: Notifications.SchedulableTriggerInputTypes.DAILY,
+        hour,
+        minute,
+        channelId: 'habit-discipline-reminders'
+      };
 
-    return identifier;
+      await Notifications.scheduleNotificationAsync({
+        identifier,
+        content: {
+          title: `🔥 Kỷ luật: ${habit.title}`,
+          body: `Đã đến giờ [${habitTypeLabel}]! Hãy giữ vững chuỗi kỷ lục của bạn nhé.`,
+          data: { habitId: habit.id, type: habit.type },
+          sound: true,
+          priority: Notifications.AndroidNotificationPriority.HIGH,
+          color: habit.color_code || '#6366F1',
+        },
+        trigger,
+      });
+      identifiers.push(identifier);
+    }
+
+    return identifiers;
   } catch (error) {
     console.error(`[NotificationManager] Failed to schedule reminder for Habit #${habit.id}:`, error);
     return null;
@@ -110,8 +116,13 @@ export async function cancelHabitReminder(habitId) {
   if (Platform.OS === 'web') return;
 
   try {
-    const identifier = `habit_reminder_${habitId}`;
-    await Notifications.cancelScheduledNotificationAsync(identifier);
+    // Cancel up to 20 possible reminders for this habit
+    for (let i = 0; i < 20; i++) {
+      const identifier = `habit_reminder_${habitId}_${i}`;
+      await Notifications.cancelScheduledNotificationAsync(identifier);
+    }
+    // Cancel the legacy single identifier just in case
+    await Notifications.cancelScheduledNotificationAsync(`habit_reminder_${habitId}`);
   } catch (error) {
     console.error(`[NotificationManager] Failed to cancel reminder for Habit #${habitId}:`, error);
   }
